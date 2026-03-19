@@ -37,7 +37,7 @@ const SIDEBAR_NAV_ITEMS: {
 }[] = [
   { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { path: "/admin/products", label: "Produkter", icon: Package },
-  { path: "/categories", label: "Kategorier", icon: FolderOpen },
+  { path: "/admin/categories", label: "Kategorier", icon: FolderOpen },
   { path: "/admin/warehouses", label: "Lagerplatser", icon: Warehouse },
   { path: "/admin/receipts", label: "Kvitton", icon: FileText },
   { path: "/admin/reports", label: "Rapporter", icon: BarChart3 },

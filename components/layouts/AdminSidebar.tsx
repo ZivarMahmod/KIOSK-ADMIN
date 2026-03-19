@@ -29,7 +29,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/products", label: "Produkter", icon: Package },
-  { href: "/categories", label: "Kategorier", icon: FolderOpen },
+  { href: "/admin/categories", label: "Kategorier", icon: FolderOpen },
   { href: "/admin/warehouses", label: "Lagerplatser", icon: Warehouse },
   { href: "/admin/receipts", label: "Kvitton", icon: FileText },
   { href: "/admin/reports", label: "Rapporter", icon: BarChart3 },

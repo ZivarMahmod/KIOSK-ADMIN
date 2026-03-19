@@ -180,18 +180,10 @@ export default function Navbar({ children }: NavbarProps) {
       };
 
   const adminNavItems: NavItem[] = [
-    { label: "Dashboard", path: "/", hasDropdown: false },
-    { label: "Products", path: "/products", hasDropdown: false },
-    { label: "Orders", path: "/orders", hasDropdown: false },
-    { label: "Invoices", path: "/invoices", hasDropdown: false },
-    { label: "Categories", path: "/categories", hasDropdown: false },
-    { label: "Suppliers", path: "/suppliers", hasDropdown: false },
-    { label: "Warehouses", path: "/warehouses", hasDropdown: false },
-    {
-      label: "Business Insights",
-      path: "/business-insights",
-      hasDropdown: false,
-    },
+    { label: "Dashboard", path: "/admin", hasDropdown: false },
+    { label: "Produkter", path: "/admin/products", hasDropdown: false },
+    { label: "Kategorier", path: "/admin/categories", hasDropdown: false },
+    { label: "Lagerplatser", path: "/admin/warehouses", hasDropdown: false },
   ];
 
   const clientNavItems: NavItem[] = [
