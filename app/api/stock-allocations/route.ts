@@ -1,141 +1,86 @@
 /**
  * Stock Allocations API Route Handler
- * GET /api/stock-allocations — list stock allocations
- * POST /api/stock-allocations — create/upsert stock allocation
+ * GET: List allocations (optionally filter by productId or warehouseId)
+ * POST: Create/update allocation
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/utils/auth";
-import { logger } from "@/lib/logger";
-import {
-  getStockAllocations,
-  upsertStockAllocation,
-  getWarehouseStockSummary,
-} from "@/prisma/stock-allocation";
-import { prisma } from "@/prisma/client";
-import { getCache, setCache, cacheKeys } from "@/lib/cache";
-import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
-import { createStockAllocationSchema } from "@/lib/validations";
-import type { StockAllocation, WarehouseStockSummary } from "@/types";
-
-function transform(
-  r: Awaited<ReturnType<typeof getStockAllocations>>[number],
-  productMap: Map<string, { name: string; sku: string }>,
-  warehouseMap: Map<string, string>,
-): StockAllocation {
-  return {
-    id: r.id,
-    productId: r.productId,
-    warehouseId: r.warehouseId,
-    quantity: Number(r.quantity),
-    reservedQuantity: Number(r.reservedQuantity),
-    userId: r.userId,
-    createdAt: r.createdAt.toISOString(),
-    updatedAt: r.updatedAt?.toISOString() ?? null,
-    product: productMap.has(r.productId)
-      ? { id: r.productId, ...productMap.get(r.productId)! }
-      : undefined,
-    warehouse: warehouseMap.has(r.warehouseId)
-      ? { id: r.warehouseId, name: warehouseMap.get(r.warehouseId)! }
-      : undefined,
-  };
-}
+import { stockAllocationsCol, productsCol, warehousesCol, docToObject, queryToArray } from "@/lib/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 
 /**
  * GET /api/stock-allocations
- * Query params:
- *   ?summary=true for warehouse summary
- *   ?warehouseId=xxx for stock in specific warehouse
  */
 export async function GET(request: NextRequest) {
   try {
-    const rateLimitResponse = await withRateLimit(
-      request,
-      defaultRateLimits.standard,
-    );
-    if (rateLimitResponse) return rateLimitResponse;
-
     const session = await getSessionFromRequest(request);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
-    const summary = searchParams.get("summary") === "true";
+    const productId = searchParams.get("productId");
     const warehouseId = searchParams.get("warehouseId");
 
-    if (summary) {
-      // Return warehouse stock summary
-      const cacheKey = cacheKeys.stockAllocation.summary(session.id);
-      const cached = await getCache<WarehouseStockSummary[]>(cacheKey);
-      if (cached) return NextResponse.json(cached);
+    let query: FirebaseFirestore.Query = stockAllocationsCol.where("userId", "==", session.uid);
 
-      const result = await getWarehouseStockSummary(session.id);
-      await setCache(cacheKey, result, 300);
-      return NextResponse.json(result);
+    if (productId) {
+      query = query.where("productId", "==", productId);
     }
-
-    // Get allocations - either by warehouse or all
-    let allocations;
-    let cacheKey: string;
-
     if (warehouseId) {
-      // Verify warehouse belongs to user
-      const warehouse = await prisma.warehouse.findFirst({
-        where: { id: warehouseId, userId: session.id },
-      });
-      if (!warehouse) {
-        return NextResponse.json(
-          { error: "Warehouse not found" },
-          { status: 404 },
-        );
-      }
-
-      cacheKey = cacheKeys.stockAllocation.byWarehouse(warehouseId);
-      const cached = await getCache<StockAllocation[]>(cacheKey);
-      if (cached) return NextResponse.json(cached);
-
-      allocations = await prisma.stockAllocation.findMany({
-        where: { warehouseId },
-        orderBy: { createdAt: "desc" },
-      });
-    } else {
-      // Return all stock allocations
-      cacheKey = cacheKeys.stockAllocation.list(session.id);
-      const cached = await getCache<StockAllocation[]>(cacheKey);
-      if (cached) return NextResponse.json(cached);
-
-      allocations = await getStockAllocations(session.id);
+      query = query.where("warehouseId", "==", warehouseId);
     }
 
-    // Fetch products and warehouses for context
-    const productIds = [...new Set(allocations.map((a) => a.productId))];
-    const warehouseIds = [...new Set(allocations.map((a) => a.warehouseId))];
+    const snapshot = await query.orderBy("createdAt", "desc").get();
+    const allocations = queryToArray(snapshot);
 
-    const [products, warehouses] = await Promise.all([
-      prisma.product.findMany({
-        where: { id: { in: productIds } },
-        select: { id: true, name: true, sku: true },
-      }),
-      prisma.warehouse.findMany({
-        where: { id: { in: warehouseIds } },
-        select: { id: true, name: true },
-      }),
-    ]);
+    // Fetch product and warehouse names
+    const productIds = [...new Set(allocations.map((a: any) => a.productId).filter(Boolean))];
+    const warehouseIds = [...new Set(allocations.map((a: any) => a.warehouseId).filter(Boolean))];
 
-    const productMap = new Map(
-      products.map((p) => [p.id, { name: p.name, sku: p.sku }]),
-    );
-    const warehouseMap = new Map(warehouses.map((w) => [w.id, w.name]));
+    const productMap = new Map<string, { name: string; sku: string }>();
+    const warehouseMap = new Map<string, string>();
 
-    const result = allocations.map((a) =>
-      transform(a, productMap, warehouseMap),
-    );
-    await setCache(cacheKey, result, 300);
+    // Fetch products in batches of 30
+    for (let i = 0; i < productIds.length; i += 30) {
+      const batch = productIds.slice(i, i + 30);
+      const snap = await productsCol.where("__name__", "in", batch).get();
+      snap.docs.forEach((doc) => {
+        const data = doc.data();
+        productMap.set(doc.id, { name: data.name, sku: data.sku });
+      });
+    }
+
+    // Fetch warehouses in batches of 30
+    for (let i = 0; i < warehouseIds.length; i += 30) {
+      const batch = warehouseIds.slice(i, i + 30);
+      const snap = await warehousesCol.where("__name__", "in", batch).get();
+      snap.docs.forEach((doc) => {
+        warehouseMap.set(doc.id, doc.data().name);
+      });
+    }
+
+    const result = allocations.map((a: any) => ({
+      id: a.id,
+      productId: a.productId,
+      warehouseId: a.warehouseId,
+      quantity: Number(a.quantity || 0),
+      reservedQuantity: Number(a.reservedQuantity || 0),
+      userId: a.userId,
+      createdAt: a.createdAt?.toDate?.()?.toISOString?.() || a.createdAt || null,
+      updatedAt: a.updatedAt?.toDate?.()?.toISOString?.() || a.updatedAt || null,
+      product: productMap.has(a.productId)
+        ? { id: a.productId, ...productMap.get(a.productId)! }
+        : undefined,
+      warehouse: warehouseMap.has(a.warehouseId)
+        ? { id: a.warehouseId, name: warehouseMap.get(a.warehouseId)! }
+        : undefined,
+    }));
 
     return NextResponse.json(result);
   } catch (error) {
-    logger.error("Error fetching stock allocations:", error);
+    console.error("Error fetching stock allocations:", error);
     return NextResponse.json(
       { error: "Failed to fetch stock allocations" },
       { status: 500 },
@@ -145,78 +90,95 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/stock-allocations
- * Create or update stock allocation
+ * Create or update a stock allocation
  */
 export async function POST(request: NextRequest) {
   try {
-    const rateLimitResponse = await withRateLimit(
-      request,
-      defaultRateLimits.standard,
-    );
-    if (rateLimitResponse) return rateLimitResponse;
-
     const session = await getSessionFromRequest(request);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
-    const validation = createStockAllocationSchema.safeParse(body);
-    if (!validation.success) {
+    const { productId, warehouseId, quantity } = body;
+
+    if (!productId || !warehouseId || quantity === undefined) {
       return NextResponse.json(
-        { error: "Invalid request body", details: validation.error.errors },
+        { error: "productId, warehouseId, and quantity are required" },
         { status: 400 },
       );
     }
 
-    const data = validation.data;
-
     // Verify product belongs to user
-    const product = await prisma.product.findFirst({
-      where: { id: data.productId, userId: session.id },
-    });
-    if (!product) {
+    const productDoc = await productsCol.doc(productId).get();
+    if (!productDoc.exists || productDoc.data()?.userId !== session.uid) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
     // Verify warehouse belongs to user
-    const warehouse = await prisma.warehouse.findFirst({
-      where: { id: data.warehouseId, userId: session.id },
-    });
-    if (!warehouse) {
-      return NextResponse.json(
-        { error: "Warehouse not found" },
-        { status: 404 },
-      );
+    const warehouseDoc = await warehousesCol.doc(warehouseId).get();
+    if (!warehouseDoc.exists || warehouseDoc.data()?.userId !== session.uid) {
+      return NextResponse.json({ error: "Warehouse not found" }, { status: 404 });
     }
 
-    const allocation = await upsertStockAllocation(data, session.id);
+    // Check if allocation already exists for this product+warehouse combo
+    const existingSnap = await stockAllocationsCol
+      .where("productId", "==", productId)
+      .where("warehouseId", "==", warehouseId)
+      .where("userId", "==", session.uid)
+      .limit(1)
+      .get();
 
-    const { invalidateAllServerCaches } = await import("@/lib/cache");
-    await invalidateAllServerCaches().catch(() => {});
+    let allocationId: string;
 
-    const result: StockAllocation = {
+    if (!existingSnap.empty) {
+      // Update existing allocation
+      const existingDoc = existingSnap.docs[0]!;
+      allocationId = existingDoc.id;
+      await stockAllocationsCol.doc(allocationId).update({
+        quantity: Number(quantity),
+        updatedAt: new Date(),
+      });
+    } else {
+      // Create new allocation
+      const now = FieldValue.serverTimestamp();
+      const docRef = await stockAllocationsCol.add({
+        productId,
+        warehouseId,
+        quantity: Number(quantity),
+        reservedQuantity: 0,
+        userId: session.uid,
+        createdAt: now,
+        updatedAt: null,
+      });
+      allocationId = docRef.id;
+    }
+
+    const allocDoc = await stockAllocationsCol.doc(allocationId).get();
+    const allocation = docToObject(allocDoc) as any;
+
+    const productData = productDoc.data();
+    const warehouseData = warehouseDoc.data();
+
+    const result = {
       id: allocation.id,
       productId: allocation.productId,
       warehouseId: allocation.warehouseId,
-      quantity: Number(allocation.quantity),
-      reservedQuantity: Number(allocation.reservedQuantity),
+      quantity: Number(allocation.quantity || 0),
+      reservedQuantity: Number(allocation.reservedQuantity || 0),
       userId: allocation.userId,
-      createdAt: allocation.createdAt.toISOString(),
-      updatedAt: allocation.updatedAt?.toISOString() ?? null,
-      product: { id: product.id, name: product.name, sku: product.sku },
-      warehouse: { id: warehouse.id, name: warehouse.name },
+      createdAt: allocation.createdAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
+      updatedAt: allocation.updatedAt?.toDate?.()?.toISOString?.() || null,
+      product: { id: productId, name: productData?.name, sku: productData?.sku },
+      warehouse: { id: warehouseId, name: warehouseData?.name },
     };
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    logger.error("Error creating stock allocation:", error);
+    console.error("Error creating stock allocation:", error);
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to create stock allocation",
+        error: error instanceof Error ? error.message : "Failed to create stock allocation",
       },
       { status: 500 },
     );

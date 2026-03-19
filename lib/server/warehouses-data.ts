@@ -1,11 +1,9 @@
 /**
- * Server-side data fetching for warehouses page SSR
- * Only import this from server code (e.g. app/warehouses/page.tsx).
+ * Server-side data fetching stubs for warehouses page SSR.
+ * Prisma has been removed — returns empty arrays until
+ * a new data source is wired up.
  */
 
-import { prisma } from "@/prisma/client";
-
-/** Warehouse shape for list page (dates as ISO strings for hydration) */
 export type WarehouseForPage = {
   id: string;
   name: string;
@@ -19,26 +17,8 @@ export type WarehouseForPage = {
   updatedBy: string | null;
 };
 
-/**
- * Fetch warehouses for the given user
- */
 export async function getWarehousesForUser(
-  userId: string,
+  _userId: string,
 ): Promise<WarehouseForPage[]> {
-  const warehouses = await prisma.warehouse.findMany({
-    where: { userId },
-  });
-
-  return warehouses.map((w) => ({
-    id: w.id,
-    name: w.name,
-    address: w.address ?? null,
-    type: w.type ?? null,
-    status: w.status,
-    userId: w.userId,
-    createdAt: w.createdAt.toISOString(),
-    updatedAt: w.updatedAt?.toISOString() ?? null,
-    createdBy: w.createdBy,
-    updatedBy: w.updatedBy ?? null,
-  }));
+  return [];
 }

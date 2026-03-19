@@ -230,7 +230,7 @@ const ProductList = React.memo(() => {
             </>
           ) : supplierPortalQuery.data ? (
             (() => {
-              const d = supplierPortalQuery.data;
+              const d = supplierPortalQuery.data as Record<string, any>;
               const nonCancelledOrders = Math.max(
                 0,
                 d.totalOrders - (d.orderStatusCounts?.cancelled ?? 0),
@@ -373,7 +373,7 @@ const ProductList = React.memo(() => {
             <>
               <StatisticsCard
                 title="Total Products"
-                value={dashboard.counts.products}
+                value={dashboard.counts?.products ?? 0}
                 description="Products availability"
                 icon={Package}
                 variant="rose"
@@ -428,7 +428,7 @@ const ProductList = React.memo(() => {
               />
               <StatisticsCard
                 title="Total Suppliers"
-                value={dashboard.counts.suppliers}
+                value={dashboard.counts?.suppliers ?? 0}
                 description="Suppliers"
                 icon={Truck}
                 variant="emerald"
@@ -445,7 +445,7 @@ const ProductList = React.memo(() => {
               />
               <StatisticsCard
                 title="Categories"
-                value={dashboard.counts.categories}
+                value={dashboard.counts?.categories ?? 0}
                 description="Product categories"
                 icon={FolderTree}
                 variant="amber"
@@ -478,7 +478,7 @@ const ProductList = React.memo(() => {
             <>
               <StatisticsCard
                 title="Total Products"
-                value={productsPageStats.counts.products}
+                value={productsPageStats.counts?.products ?? 0}
                 description="Products availability"
                 icon={Package}
                 variant="rose"
@@ -542,7 +542,7 @@ const ProductList = React.memo(() => {
               />
               <StatisticsCard
                 title="Total Suppliers"
-                value={productsPageStats.counts.suppliers}
+                value={productsPageStats.counts?.suppliers ?? 0}
                 description="Suppliers"
                 icon={Truck}
                 variant="emerald"
@@ -561,7 +561,7 @@ const ProductList = React.memo(() => {
               />
               <StatisticsCard
                 title="Categories"
-                value={productsPageStats.counts.categories}
+                value={productsPageStats.counts?.categories ?? 0}
                 description="Product categories"
                 icon={FolderTree}
                 variant="amber"

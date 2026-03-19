@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm install:*)",
+      "Bash(find /c/Users/Zivar-PC/Desktop/Kiosk-admin -type f \\\\\\(-name *.env* -o -name seed* \\\\\\))",
+      "Bash(find /c/Users/Zivar-PC/Desktop/Kiosk-admin -type f -name LoginPage*)",
+      "Bash(find /c/Users/Zivar-PC/Desktop/Kiosk-admin -type f -name *seed*)",
+      "Bash(find /c/Users/Zivar-PC/Desktop/Kiosk-admin -type f -path */utils/auth*)",
+      "Bash(find /c/Users/Zivar-PC/Desktop/Kiosk-admin -type f -name *auth-server*)",
+      "Bash(find /c/Users/Zivar-PC/Desktop/Kiosk-admin -type f -path */contexts* -name *auth*)",
+      "Bash(find /c/Users/Zivar-PC/Desktop/Kiosk-admin -type f -name validations*)",
+      "Bash(grep -r loginSchema /c/Users/Zivar-PC/Desktop/Kiosk-admin/lib --include=*.ts)",
+      "Bash(mongosh --eval \"db.version\\(\\)\" --quiet)",
+      "Bash(mongod --version)",
+      "Bash(npx prisma:*)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/register -H \"Content-Type: application/json\" -d '{\"\"name\"\":\"\"Zivar Admin\"\",\"\"email\"\":\"\"admin@zivar.se\"\",\"\"password\"\":\"\"admin123456\"\"}')",
+      "Bash(nslookup _mongodb._tcp.zivar.m6pbeh8.mongodb.net)",
+      "Bash(nslookup zivar.m6pbeh8.mongodb.net 8.8.8.8)",
+      "Bash(nslookup _mongodb._tcp.zivar.m6pbeh8.mongodb.net 8.8.8.8)",
+      "Bash(nslookup -type=SRV _mongodb._tcp.zivar.m6pbeh8.mongodb.net 8.8.8.8)",
+      "Bash(nslookup ac-vgttzoi-shard-00-00.m6pbeh8.mongodb.net)",
+      "Bash(nslookup ac-vgttzoi-shard-00-00.m6pbeh8.mongodb.net 8.8.8.8)",
+      "Bash(ipconfig //flushdns)",
+      "Bash(rm -rf lib/stripe lib/shippo lib/pdf lib/ai lib/forecasting lib/monitoring lib/notifications lib/queue lib/export lib/import lib/cache prisma scripts _reference middleware)",
+      "Bash(rm -f sentry.client.config.ts sentry.edge.config.ts sentry.server.config.ts instrumentation.ts proxy.ts dns-fix.js utils/auth.client.ts)",
+      "Bash(npx tsc:*)",
+      "Bash(npx next:*)",
+      "Bash(node -e \"const admin = require\\(''firebase-admin''\\); console.log\\(typeof admin.getApps\\);\")",
+      "Bash(node -e \"const admin = require\\(''firebase-admin''\\); console.log\\(Object.keys\\(admin\\).filter\\(k => k.includes\\(''App''\\) || k.includes\\(''app''\\) || k.includes\\(''init''\\)\\).join\\('', ''\\)\\);\")",
+      "Bash(node -e \"const {getApps, initializeApp} = require\\(''firebase-admin/app''\\); console.log\\(typeof getApps\\);\")",
+      "Bash(node -e \":*)",
+      "Bash(node --env-file=.env -e \":*)",
+      "Bash(curl -s http://localhost:3000/login)"
+    ]
+  }
+}

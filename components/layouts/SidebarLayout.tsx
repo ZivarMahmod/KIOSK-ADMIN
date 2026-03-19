@@ -4,18 +4,15 @@ import React, { type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Activity,
   BarChart3,
   FileText,
+  FolderOpen,
+  Gift,
+  Heart,
   LayoutDashboard,
   LogOut,
-  Mail,
   Package,
   Settings,
-  ShoppingCart,
-  Tag,
-  TrendingUp,
-  Users,
   Warehouse,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
@@ -38,22 +35,15 @@ const SIDEBAR_NAV_ITEMS: {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
-  { path: "/", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/products", label: "Products", icon: Package },
-  { path: "/orders", label: "Orders", icon: ShoppingCart },
-  { path: "/invoices", label: "Invoices", icon: FileText },
-  { path: "/categories", label: "Categories", icon: Tag },
-  { path: "/suppliers", label: "Suppliers", icon: Users },
-  { path: "/warehouses", label: "Warehouses", icon: Warehouse },
-  { path: "/business-insights", label: "Business Insights", icon: TrendingUp },
-  { path: "/admin", label: "Admin", icon: Settings },
-  { path: "/api-status", label: "API Status", icon: Activity },
-  { path: "/api-docs", label: "API Docs", icon: FileText },
-  {
-    path: "/settings/email-preferences",
-    label: "Email Preferences",
-    icon: Mail,
-  },
+  { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/admin/products", label: "Produkter", icon: Package },
+  { path: "/categories", label: "Kategorier", icon: FolderOpen },
+  { path: "/admin/warehouses", label: "Lagerplatser", icon: Warehouse },
+  { path: "/admin/receipts", label: "Kvitton", icon: FileText },
+  { path: "/admin/reports", label: "Rapporter", icon: BarChart3 },
+  { path: "/admin/offers", label: "Erbjudanden", icon: Gift },
+  { path: "/admin/wishes", label: "Önskningar", icon: Heart },
+  { path: "/admin/settings", label: "Inställningar", icon: Settings },
 ];
 
 export interface SidebarLayoutProps {
@@ -64,7 +54,7 @@ export interface SidebarLayoutProps {
 
 export default function SidebarLayout({
   children,
-  sidebarTitle = "Stock Inventory",
+  sidebarTitle = "Zivert Kiosk",
 }: SidebarLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -115,17 +105,11 @@ export default function SidebarLayout({
       >
         <div className="flex flex-col gap-1 p-3">
           <Link
-            href="/"
+            href="/admin"
             className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
           >
             <LayoutDashboard className="h-5 w-5 text-sky-600 dark:text-sky-400" />
             {sidebarTitle}
-          </Link>
-          <Link
-            href="/"
-            className="rounded-lg px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-          >
-            ← Back to Dashboard
           </Link>
         </div>
         <Separator className="bg-gray-200/50 dark:bg-white/10" />

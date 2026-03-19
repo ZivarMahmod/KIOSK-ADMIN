@@ -156,7 +156,7 @@ export default function WarehouseList() {
             <>
               <StatisticsCard
                 title="Total Products"
-                value={warehousesPageStats.counts.products}
+                value={warehousesPageStats.counts?.products ?? 0}
                 description="Products availability"
                 icon={Package}
                 variant="rose"

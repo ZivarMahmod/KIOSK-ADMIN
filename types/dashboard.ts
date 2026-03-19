@@ -1,6 +1,6 @@
 /**
- * Dashboard (admin overview) type definitions
- * Used by GET /api/dashboard and admin Analytics page.
+ * Dashboard type definitions
+ * Used by the admin dashboard overview.
  */
 
 export interface DashboardCounts {
@@ -69,9 +69,6 @@ export interface DashboardRecent {
   imports: DashboardRecentImport[];
 }
 
-/**
- * Order status distribution
- */
 export interface DashboardOrderStatusDist {
   pending: number;
   confirmed: number;
@@ -81,43 +78,28 @@ export interface DashboardOrderStatusDist {
   cancelled: number;
 }
 
-/**
- * Top product by order count
- */
 export interface DashboardTopProduct {
   productId: string;
   productName: string;
-  sku: string | null;
+  sku: string;
   orderCount: number;
   totalQuantity: number;
   totalRevenue: number;
 }
 
-/**
- * Order analytics summary
- */
 export interface DashboardOrderAnalytics {
   statusDistribution: DashboardOrderStatusDist;
   topProducts: DashboardTopProduct[];
   averageOrderValue: number;
   totalRevenue: number;
-  /** Sum of order totals excluding cancelled orders (store-wide). Use for Total Revenue card. */
   totalRevenueExcludingCancelled: number;
-  /** Sum of order totals for non-cancelled orders with paymentStatus unpaid/partial (store-wide). */
   pendingOrderAmount: number;
-  /** Sum of order totals for non-cancelled orders with paymentStatus paid (store-wide). Makes Paid + Pending = totalRevenueExcludingCancelled. */
   paidOrderAmount: number;
-  /** Sum of order totals where paymentStatus === 'refunded' (store-wide) */
   refundedAmount: number;
-  /** Count of orders where paymentStatus === 'refunded' (store-wide) */
   refundedCount: number;
-  /** Sum of order totals for cancelled orders (store-wide). Excluded from Total Revenue; show on Total Value card. */
   cancelledOrderAmount: number;
 }
 
-/**
- * Invoice status distribution
- */
 export interface DashboardInvoiceStatusDist {
   draft: number;
   sent: number;
@@ -126,27 +108,18 @@ export interface DashboardInvoiceStatusDist {
   cancelled: number;
 }
 
-/**
- * Invoice analytics summary
- */
 export interface DashboardInvoiceAnalytics {
   statusDistribution: DashboardInvoiceStatusDist;
   totalRevenue: number;
-  /** Sum of invoice totals excluding cancelled (store-wide) */
-  totalExcludingCancelled?: number;
-  /** Sum of cancelled invoice totals (store-wide) */
-  cancelledInvoiceSum?: number;
+  totalExcludingCancelled: number;
+  cancelledInvoiceSum: number;
   paidRevenue: number;
   outstandingAmount: number;
   overdueAmount: number;
   averageInvoiceValue: number;
-  /** Average invoice total excluding cancelled (totalExcludingCancelled / non-cancelled count) */
-  averageInvoiceValueExcludingCancelled?: number;
+  averageInvoiceValueExcludingCancelled: number;
 }
 
-/**
- * Warehouse analytics summary
- */
 export interface DashboardWarehouseAnalytics {
   totalWarehouses: number;
   activeWarehouses: number;
@@ -154,33 +127,28 @@ export interface DashboardWarehouseAnalytics {
   typeDistribution: { type: string; count: number }[];
 }
 
-/** Product status counts (store owner's products) */
 export interface DashboardProductStatusBreakdown {
   available: number;
   stockLow: number;
   stockOut: number;
 }
 
-/** User role counts (all users) */
 export interface DashboardUserRoleBreakdown {
   admin: number;
   client: number;
   supplier: number;
 }
 
-/** Supplier status counts (store owner's suppliers) */
 export interface DashboardSupplierStatusBreakdown {
   active: number;
   inactive: number;
 }
 
-/** Category status counts (store owner's categories) */
 export interface DashboardCategoryStatusBreakdown {
   active: number;
   inactive: number;
 }
 
-/** Support ticket status counts (tickets assigned to this admin) */
 export interface DashboardTicketStatusBreakdown {
   open: number;
   in_progress: number;
@@ -188,38 +156,34 @@ export interface DashboardTicketStatusBreakdown {
   closed: number;
 }
 
-/** Product review status counts (reviews for owner's products) */
 export interface DashboardReviewStatusBreakdown {
   pending: number;
   approved: number;
   rejected: number;
 }
 
-/** Self vs others (store owner vs client) breakdown for homepage cards */
 export interface DashboardSelfOthersBreakdown {
-  /** Orders placed by store owner */
   orderSelfCount: number;
-  /** Orders placed by clients (others) */
   orderOthersCount: number;
-  /** Invoices for orders placed by store owner */
   invoiceSelfCount: number;
-  /** Invoices for orders placed by clients (others) */
   invoiceOthersCount: number;
-  /** Revenue from orders placed by store owner (excl. cancelled) */
   revenueSelf: number;
-  /** Revenue from orders placed by clients (excl. cancelled) */
   revenueOthers: number;
 }
 
 export interface DashboardStats {
-  counts: DashboardCounts;
-  revenue: DashboardRevenue;
-  trends: DashboardTrendPoint[];
-  recent: DashboardRecent;
-  orderAnalytics: DashboardOrderAnalytics;
-  invoiceAnalytics: DashboardInvoiceAnalytics;
-  warehouseAnalytics: DashboardWarehouseAnalytics;
-  /** Total inventory value (sum of price*quantity for owner's products) */
+  totalProducts?: number;
+  totalCategories?: number;
+  totalWarehouses?: number;
+  totalStock?: number;
+  lowStockCount?: number;
+  counts?: DashboardCounts;
+  revenue?: DashboardRevenue;
+  trends?: DashboardTrendPoint[];
+  recent?: DashboardRecent;
+  orderAnalytics?: DashboardOrderAnalytics;
+  invoiceAnalytics?: DashboardInvoiceAnalytics;
+  warehouseAnalytics?: DashboardWarehouseAnalytics;
   totalInventoryValue?: number;
   productStatusBreakdown?: DashboardProductStatusBreakdown;
   userRoleBreakdown?: DashboardUserRoleBreakdown;
@@ -227,6 +191,5 @@ export interface DashboardStats {
   categoryStatusBreakdown?: DashboardCategoryStatusBreakdown;
   ticketStatusBreakdown?: DashboardTicketStatusBreakdown;
   reviewStatusBreakdown?: DashboardReviewStatusBreakdown;
-  /** Self vs others breakdown (orders, invoices, revenue) for homepage cards */
   selfOthersBreakdown?: DashboardSelfOthersBreakdown;
 }

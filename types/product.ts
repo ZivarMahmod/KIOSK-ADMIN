@@ -8,7 +8,7 @@
 export type ProductStatus = "Available" | "Stock Low" | "Stock Out";
 
 /**
- * Product interface matching Prisma schema
+ * Product interface
  */
 export interface Product {
   id: string;
@@ -16,48 +16,42 @@ export interface Product {
   sku: string;
   price: number;
   quantity: number;
-  reservedQuantity?: number; // Stock reserved by pending orders (not yet confirmed)
   status?: ProductStatus;
   createdAt: Date;
   updatedAt?: Date | null;
-  userId: string;
-  createdBy: string; // User ID who created the product
-  updatedBy?: string | null; // User ID who last updated the product
   categoryId: string;
-  supplierId: string;
   category?: string | { id: string; name: string } | null;
+  supplierId?: string;
   supplier?: string | { id: string; name: string } | null;
-  qrCodeUrl?: string; // ImageKit URL for QR code image
-  qrCodeFileId?: string; // ImageKit file ID for cleanup when regenerating
-  imageUrl?: string; // ImageKit URL for product image
-  imageFileId?: string; // ImageKit file ID for cleanup when updating/deleting
-  expirationDate?: Date | null; // Product expiration date (optional, for perishable items)
-  /** Product owner display name (populated when fetching by supplier) */
-  productOwnerName?: string | null;
-  /** Extended by API for detail page */
-  creator?: { name: string; email: string } | null;
-  updater?: { name: string; email: string } | null;
-  statistics?: {
-    totalQuantitySold: number;
-    totalRevenue: number;
-    uniqueOrders: number;
-    totalValue?: number;
-  } | null;
+  qrCodeUrl?: string;
+  qrCodeFileId?: string;
+  imageUrl?: string;
+  imageFileId?: string;
+  expirationDate?: Date | null;
+  userId?: string;
+  description?: string;
+  productOwnerName?: string;
+  reservedQuantity?: number;
+  creator?: { name?: string; email?: string } | null;
+  updater?: { name?: string; email?: string } | null;
   recentOrders?: Array<{
     id: string;
     orderId: string;
     orderNumber: string;
-    productName?: string;
-    productSku?: string | null;
     quantity: number;
     price: number;
     orderDate: string;
-    subtotal: number;
-    /** Proportional share of order total (includes tax, shipping, discount) */
+    subtotal?: number;
     proportionalAmount?: number;
-    orderTotal?: number;
-    orderStatus: string;
-  }> | null;
+    status?: string;
+    orderStatus?: string;
+  }>;
+  statistics?: {
+    totalQuantitySold?: number;
+    totalRevenue?: number;
+    uniqueOrders?: number;
+    totalValue?: number;
+  };
 }
 
 /**
@@ -70,11 +64,12 @@ export interface CreateProductInput {
   quantity: number;
   status: ProductStatus;
   categoryId: string;
-  supplierId: string;
-  userId: string;
+  supplierId?: string;
+  userId?: string;
   imageUrl?: string;
   imageFileId?: string;
-  expirationDate?: string; // ISO date string
+  expirationDate?: string;
+  description?: string;
 }
 
 /**
@@ -89,7 +84,9 @@ export interface UpdateProductInput {
   status?: ProductStatus;
   categoryId?: string;
   supplierId?: string;
+  userId?: string;
   imageUrl?: string;
   imageFileId?: string;
-  expirationDate?: string | null; // ISO date string or null to clear
+  expirationDate?: string | null;
+  description?: string;
 }

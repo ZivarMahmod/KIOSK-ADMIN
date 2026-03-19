@@ -9,7 +9,12 @@ import axios, {
   type AxiosRequestConfig,
   type AxiosResponse,
 } from "axios";
-import Cookies from "js-cookie";
+/** Read a cookie by name using native browser API (replaces js-cookie). */
+function getCookie(name: string): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  const match = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+  return match?.[1] ? decodeURIComponent(match[1]) : undefined;
+}
 import { API_ENDPOINTS } from "./endpoints";
 import {
   createApiError,
@@ -111,7 +116,7 @@ function createAxiosInstance(): AxiosInstance {
   // Request interceptor - Add auth token
   instance.interceptors.request.use(
     (config) => {
-      const token = Cookies.get("session_id");
+      const token = getCookie("session_id");
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }

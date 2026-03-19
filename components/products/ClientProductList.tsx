@@ -43,17 +43,23 @@ export default function ClientProductList({
   const meta = metaQuery.data;
   const productsData = productsQuery.data;
 
-  const admins = meta?.admins ?? [];
-  const stats = meta?.stats ?? {
+  const admins = (meta?.admins ?? []) as Array<{ id: string; email: string; name: string }>;
+  const stats = (meta?.stats ?? {
     admins: 0,
     clients: 0,
     suppliers: { total: 0, active: 0, inactive: 0 },
     categories: { total: 0, active: 0, inactive: 0 },
     warehouses: { total: 0, active: 0, inactive: 0 },
+  }) as {
+    admins: number;
+    clients: number;
+    suppliers: { total: number; active: number; inactive: number };
+    categories: { total: number; active: number; inactive: number };
+    warehouses: { total: number; active: number; inactive: number };
   };
-  const products = productsData?.products ?? [];
-  const ownerCategories = productsData?.categories ?? [];
-  const ownerSuppliers = productsData?.suppliers ?? [];
+  const products = (productsData?.products ?? []) as Product[];
+  const ownerCategories = (productsData?.categories ?? []) as Category[];
+  const ownerSuppliers = (productsData?.suppliers ?? []) as Supplier[];
 
   useEffect(() => {
     if (!isMountedRef.current) {

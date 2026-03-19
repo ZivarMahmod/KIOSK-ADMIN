@@ -1,10 +1,10 @@
 import { getSession } from "@/lib/auth-server";
 import { getProductsForUser } from "@/lib/server/home-data";
-import AdminProductsContent from "@/components/admin/AdminProductsContent";
+import ProductsPage from "@/components/Pages/ProductsPage";
 
 export default async function AdminProductsPage() {
   const user = await getSession();
   if (!user) return null;
-  const initialProducts = await getProductsForUser(user.id);
-  return <AdminProductsContent initialProducts={initialProducts} />;
+  const initialProducts = await getProductsForUser(user.uid);
+  return <ProductsPage initialProducts={initialProducts} />;
 }

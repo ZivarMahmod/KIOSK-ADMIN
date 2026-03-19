@@ -733,7 +733,7 @@ export default function ProductDetailPage({
                       Total Revenue:
                     </span>
                     <span className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
-                      ${stats.totalRevenue.toFixed(2)}
+                      ${(stats.totalRevenue ?? 0).toFixed(2)}
                     </span>
                   </div>
 
@@ -804,14 +804,14 @@ export default function ProductDetailPage({
                           order.proportionalAmount !== order.subtotal ? (
                             <>
                               <span className="text-gray-500 dark:text-white/50 line-through mr-2">
-                                ${order.subtotal.toFixed(2)}
+                                ${(order.subtotal ?? 0).toFixed(2)}
                               </span>
                               <span className="text-rose-600 dark:text-rose-400">
                                 ${order.proportionalAmount.toFixed(2)}
                               </span>
                             </>
                           ) : (
-                            `$${order.subtotal.toFixed(2)}`
+                            `$${(order.subtotal ?? 0).toFixed(2)}`
                           )}
                         </p>
                         <Badge

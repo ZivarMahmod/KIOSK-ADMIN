@@ -134,7 +134,7 @@ const CategoryList = React.memo(() => {
             <>
               <StatisticsCard
                 title="Total Products"
-                value={categoriesPageStats.counts.products}
+                value={categoriesPageStats.counts?.products ?? 0}
                 description="Products availability"
                 icon={Package}
                 variant="rose"
@@ -199,7 +199,7 @@ const CategoryList = React.memo(() => {
               />
               <StatisticsCard
                 title="Total Suppliers"
-                value={categoriesPageStats.counts.suppliers}
+                value={categoriesPageStats.counts?.suppliers ?? 0}
                 description="Suppliers"
                 icon={Truck}
                 variant="emerald"
@@ -219,7 +219,7 @@ const CategoryList = React.memo(() => {
               />
               <StatisticsCard
                 title="Categories"
-                value={categoriesPageStats.counts.categories}
+                value={categoriesPageStats.counts?.categories ?? 0}
                 description="Product categories"
                 icon={FolderTree}
                 variant="amber"

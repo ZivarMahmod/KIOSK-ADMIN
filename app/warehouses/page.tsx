@@ -13,6 +13,6 @@ export default async function WarehousesRoute() {
   if (!user) {
     redirect("/login");
   }
-  const initialWarehouses = await getWarehousesForUser(user.id);
+  const initialWarehouses = await getWarehousesForUser(user.uid);
   return <WarehousesPage initialWarehouses={initialWarehouses} />;
 }

@@ -1,10 +1,5 @@
 "use client";
 
-/**
- * Auth context: provides user, login state, and logout to the whole app.
- * On mount, restores session from localStorage (for fast UI) then validates via /api/auth/session.
- * On logout/login queryClient.clear() wipes ALL cached queries so the next user never sees stale data.
- */
 import React, {
   createContext,
   useContext,
@@ -12,244 +7,116 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import Cookies from "js-cookie";
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { useQueryClient } from "@tanstack/react-query";
-import axiosInstance from "@/utils/axiosInstance";
-import { getSessionClient } from "@/utils/auth.client";
-import type { User, AuthContextType } from "@/types";
 
-/** Context holding auth state and methods; consumed via useAuth(). */
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  image?: string | null;
+  role?: string;
+}
+
+export interface AuthContextType {
+  isLoggedIn: boolean;
+  user: User | null;
+  login: (email: string, password: string) => Promise<User>;
+  logout: () => Promise<void>;
+  isCheckingAuth: boolean;
+  refreshSession: () => Promise<void>;
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * Wraps the app in layout; children get access to useAuth() for user, isLoggedIn, logout, checkSession.
- */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const queryClient = useQueryClient();
-  // Initialize with false to prevent hydration mismatch
-  // Will be updated from localStorage after mount
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [mounted, setMounted] = useState(false);
 
-  /**
-   * Clear all authentication data from state, storage, and query cache.
-   * queryClient.clear() wipes every cached query (products, orders, invoices,
-   * dashboard, portal, notifications, etc.) so the next user starts fresh.
-   */
-  const clearAuthData = useCallback(() => {
-    setIsLoggedIn(false);
+  // Listen to Firebase auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const userData: User = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || firebaseUser.email || "",
+          email: firebaseUser.email || "",
+          image: firebaseUser.photoURL,
+        };
+        setUser(userData);
+        setIsLoggedIn(true);
+      } else {
+        setUser(null);
+        setIsLoggedIn(false);
+        queryClient.clear();
+      }
+      setIsCheckingAuth(false);
+    });
+
+    return () => unsubscribe();
+  }, [queryClient]);
+
+  const login = useCallback(
+    async (email: string, password: string): Promise<User> => {
+      queryClient.clear();
+      const credential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const firebaseUser = credential.user;
+      const userData: User = {
+        id: firebaseUser.uid,
+        name: firebaseUser.displayName || firebaseUser.email || "",
+        email: firebaseUser.email || "",
+        image: firebaseUser.photoURL,
+      };
+      setUser(userData);
+      setIsLoggedIn(true);
+      return userData;
+    },
+    [queryClient]
+  );
+
+  const logout = useCallback(async () => {
+    await signOut(auth);
     setUser(null);
-    Cookies.remove("session_id");
-    localStorage.removeItem("isAuth");
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("token");
-    localStorage.removeItem("getSession");
-    localStorage.removeItem("prevUserId");
-    localStorage.removeItem("stock-inventory-query-cache");
+    setIsLoggedIn(false);
     queryClient.clear();
   }, [queryClient]);
 
-  useEffect(() => {
-    // Mark component as mounted
-    queueMicrotask(() => setMounted(true));
-
-    // Load cached auth state from localStorage after mount to prevent hydration errors
-    const cachedIsLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    const cachedSession = localStorage.getItem("getSession");
-
-    if (cachedIsLoggedIn && cachedSession) {
-      try {
-        const parsed = JSON.parse(cachedSession);
-        setUser({
-          id: parsed.userId || parsed.id,
-          name: parsed.userName || parsed.name,
-          email: parsed.userEmail || parsed.email,
-          image: parsed.image || parsed.picture || null, // Support both image and picture (backward compatibility)
-          role: parsed.userRole ?? parsed.role ?? "user",
-        });
-        setIsLoggedIn(true);
-      } catch (error) {
-        // Invalid cached data, will check session from server
-      }
+  const refreshSession = useCallback(async () => {
+    const firebaseUser = auth.currentUser;
+    if (firebaseUser) {
+      await firebaseUser.reload();
+      setUser({
+        id: firebaseUser.uid,
+        name: firebaseUser.displayName || firebaseUser.email || "",
+        email: firebaseUser.email || "",
+        image: firebaseUser.photoURL,
+      });
+      setIsLoggedIn(true);
     }
   }, []);
 
-  /**
-   * Check if user has an active session
-   * Can be called to force a session refresh
-   * Memoized with useCallback to prevent unnecessary recreations
-   */
-  const checkSession = useCallback(async () => {
-    try {
-      // If localStorage already has a cached session (e.g. we just logged in),
-      // skip the blocking isCheckingAuth state so the UI renders instantly
-      // from cached data while we validate in the background.
-      const hasCachedSession = localStorage.getItem("isLoggedIn") === "true";
-      if (!hasCachedSession) {
-        setIsCheckingAuth(true);
-      }
-
-      const session = await getSessionClient();
-      if (session) {
-        const prevId = localStorage.getItem("prevUserId");
-        if (prevId && prevId !== session.id) {
-          queryClient.clear();
-        }
-        localStorage.setItem("prevUserId", session.id);
-
-        setIsLoggedIn(true);
-        setUser({
-          id: session.id,
-          name: session.name,
-          email: session.email,
-          image:
-            session.image ||
-            (session as { picture?: string }).picture ||
-            undefined,
-          role: (session as { role?: string }).role ?? "user",
-        });
-        localStorage.setItem("isAuth", "true");
-        localStorage.setItem("isLoggedIn", "true");
-        const existingToken = localStorage.getItem("token") || session.id;
-        localStorage.setItem("token", existingToken);
-        localStorage.setItem("getSession", JSON.stringify(session));
-      } else {
-        clearAuthData();
-      }
-    } finally {
-      setIsCheckingAuth(false);
-    }
-  }, [clearAuthData, queryClient]);
-
-  /**
-   * Force refresh session (useful after OAuth redirect)
-   */
-  const refreshSession = useCallback(async () => {
-    await checkSession();
-  }, [checkSession]);
-
-  useEffect(() => {
-    // Only run after component is mounted
-    if (!mounted) return;
-
-    // Initialize local storage with default values if not already set
-    if (localStorage.getItem("isAuth") === null) {
-      localStorage.setItem("isAuth", "false");
-    }
-    if (localStorage.getItem("isLoggedIn") === null) {
-      localStorage.setItem("isLoggedIn", "false");
-    }
-    if (localStorage.getItem("token") === null) {
-      localStorage.setItem("token", "");
-    }
-    if (localStorage.getItem("getSession") === null) {
-      localStorage.setItem("getSession", "");
-    }
-    if (localStorage.getItem("theme") === null) {
-      localStorage.setItem("theme", "light");
-    }
-    if (localStorage.getItem("jiraBaseUrl") === null) {
-      localStorage.setItem("jiraBaseUrl", "atlassian.net");
-    }
-    if (localStorage.getItem("captureCloudUrl") === null) {
-      localStorage.setItem(
-        "captureCloudUrl",
-        "https://prod-capture.zephyr4jiracloud.com/capture",
-      );
-    }
-
-    // Check if we're coming from OAuth redirect (URL has oauth_success=true)
-    // If so, skip initial session check - it will be handled by the homepage's refreshSession
-    // Use a more reliable check that works during SSR and client-side
-    const isOAuthRedirect =
-      typeof window !== "undefined" &&
-      (window.location.search.includes("oauth_success=true") ||
-        window.location.href.includes("oauth_success=true"));
-
-    // Initial session check - skip if OAuth redirect (will be handled by refreshSession)
-    if (!isOAuthRedirect) {
-      checkSession();
-    } else {
-      // For OAuth redirect, set isCheckingAuth to false immediately
-      // The homepage's refreshSession will handle the session check
-      setIsCheckingAuth(false);
-    }
-  }, [mounted, checkSession]);
-
-  /**
-   * Login function - authenticates user and sets session
-   * @returns User data from login response
-   */
-  const login = async (email: string, password: string) => {
-    try {
-      const response = await axiosInstance.post("/auth/login", {
-        email,
-        password,
-      });
-
-      const result = response.data;
-      const userData = {
-        id: result.userId,
-        name: result.userName,
-        email: result.userEmail,
-        role: result.userRole ?? "user",
-      };
-
-      // Wipe all cached queries from the previous session so the new user
-      // never sees stale orders, invoices, products, dashboard cards, etc.
-      queryClient.clear();
-
-      setIsLoggedIn(true);
-      setUser(userData);
-      Cookies.set("session_id", result.sessionId);
-
-      localStorage.setItem("isAuth", "true");
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("token", result.sessionId);
-      localStorage.setItem("getSession", JSON.stringify(result));
-
-      return userData;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  /**
-   * Logout function - clears session and user data
-   */
-  const logout = async () => {
-    try {
-      await axiosInstance.post("/auth/logout");
-      clearAuthData();
-    } catch (error) {
-      throw error;
-    }
-  };
-
   return (
     <AuthContext.Provider
-      value={{
-        isLoggedIn,
-        user,
-        login,
-        logout,
-        isCheckingAuth,
-        refreshSession,
-      }}
+      value={{ isLoggedIn, user, login, logout, isCheckingAuth, refreshSession }}
     >
       {children}
     </AuthContext.Provider>
   );
 };
 
-/**
- * Hook to access authentication context
- * @throws Error if used outside AuthProvider
- */
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {

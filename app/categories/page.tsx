@@ -13,6 +13,6 @@ export default async function CategoriesRoute() {
   if (!user) {
     redirect("/login");
   }
-  const initialCategories = await getCategoriesForUser(user.id);
+  const initialCategories = await getCategoriesForUser(user.uid);
   return <CategoriesPage initialCategories={initialCategories} />;
 }
