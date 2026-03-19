@@ -104,6 +104,37 @@ export const API_ENDPOINTS = {
     base: "/stock-allocations",
   },
 
+  // Receipts
+  receipts: {
+    base: "/receipts",
+    bulk: "/receipts/bulk",
+  },
+
+  // Offers
+  offers: {
+    base: "/offers",
+  },
+
+  // Wishes
+  wishes: {
+    base: "/wishes",
+  },
+
+  // Settings
+  settings: {
+    base: "/settings",
+  },
+
+  // Tags
+  tags: {
+    base: "/tags",
+  },
+
+  // Reports
+  reports: {
+    base: "/reports",
+  },
+
   // Forecasting
   forecasting: {
     base: "/forecasting",

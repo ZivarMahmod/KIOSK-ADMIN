@@ -1,75 +1,46 @@
 /**
  * Centralized type exports
- * Re-export all types from organized type files
  */
 
-// Product types
 export type {
-  Product,
-  ProductStatus,
-  CreateProductInput,
-  UpdateProductInput,
+  Product, ProductStatus, CreateProductInput, UpdateProductInput,
 } from "./product";
 
-// Category types
 export type {
-  Category,
-  CreateCategoryInput,
-  UpdateCategoryInput,
+  Category, CreateCategoryInput, UpdateCategoryInput,
 } from "./category";
 
-// Warehouse types
 export type {
-  Warehouse,
-  CreateWarehouseInput,
-  UpdateWarehouseInput,
+  Warehouse, CreateWarehouseInput, UpdateWarehouseInput,
 } from "./warehouse";
 
-// Auth types
-export type {
-  User,
-  AuthContextType,
-  LoginInput,
-} from "./auth";
+export type { User, AuthContextType, LoginInput } from "./auth";
 
-// Dashboard types
 export type {
-  DashboardStats,
-  DashboardCounts,
-  DashboardRevenue,
-  DashboardTrendPoint,
-  DashboardRecent,
-  DashboardRecentOrder,
-  DashboardRecentTicket,
-  DashboardRecentReview,
-  DashboardRecentImport,
-  DashboardOrderAnalytics,
-  DashboardOrderStatusDist,
-  DashboardTopProduct,
-  DashboardInvoiceAnalytics,
-  DashboardInvoiceStatusDist,
-  DashboardWarehouseAnalytics,
-  DashboardProductStatusBreakdown,
-  DashboardUserRoleBreakdown,
-  DashboardSupplierStatusBreakdown,
-  DashboardCategoryStatusBreakdown,
-  DashboardTicketStatusBreakdown,
-  DashboardReviewStatusBreakdown,
-  DashboardSelfOthersBreakdown,
+  DashboardStats, DashboardCounts,
 } from "./dashboard";
 
-// Stock Allocation types
 export type {
-  StockTransferStatus,
-  StockAllocation,
-  StockTransfer,
-  CreateStockAllocationInput,
-  UpdateStockAllocationInput,
-  CreateStockTransferInput,
-  WarehouseStockSummary,
+  StockTransferStatus, StockAllocation, StockTransfer,
+  CreateStockAllocationInput, UpdateStockAllocationInput,
+  CreateStockTransferInput, WarehouseStockSummary,
 } from "./stock-allocation";
 
-// Legacy types (stubs from Stockly migration)
+export type {
+  Receipt, ReceiptItem, CreateReceiptInput, UpdateReceiptInput,
+} from "./receipt";
+
+export type {
+  Offer, OfferProduct, CreateOfferInput, UpdateOfferInput,
+} from "./offer";
+
+export type { Wish } from "./wish";
+
+export type { KioskSettings, UpdateSettingsInput } from "./settings";
+
+export type { Tag, CreateTagInput } from "./tag";
+
+// Legacy types (still referenced by existing components)
 export type {
   Supplier,
   CreateSupplierInput,

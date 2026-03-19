@@ -239,6 +239,48 @@ export const queryKeys = {
       [...queryKeys.stockAllocation.all, "warehouse", warehouseId] as const,
   },
 
+  // Receipt queries
+  receipts: {
+    all: ["receipts"] as const,
+    lists: () => [...queryKeys.receipts.all, "list"] as const,
+    list: (filters?: Record<string, unknown>) => [...queryKeys.receipts.lists(), filters] as const,
+    details: () => [...queryKeys.receipts.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.receipts.details(), id] as const,
+  },
+
+  // Offer queries
+  offers: {
+    all: ["offers"] as const,
+    lists: () => [...queryKeys.offers.all, "list"] as const,
+    list: (filters?: Record<string, unknown>) => [...queryKeys.offers.lists(), filters] as const,
+    details: () => [...queryKeys.offers.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.offers.details(), id] as const,
+  },
+
+  // Wish queries
+  wishes: {
+    all: ["wishes"] as const,
+    lists: () => [...queryKeys.wishes.all, "list"] as const,
+  },
+
+  // Settings queries
+  settings: {
+    all: ["settings"] as const,
+    current: () => [...queryKeys.settings.all, "current"] as const,
+  },
+
+  // Tag queries
+  tags: {
+    all: ["tags"] as const,
+    lists: () => [...queryKeys.tags.all, "list"] as const,
+  },
+
+  // Reports queries
+  reports: {
+    all: ["reports"] as const,
+    summary: (period?: string) => [...queryKeys.reports.all, "summary", period ?? "all"] as const,
+  },
+
   // Forecasting queries
   forecasting: {
     all: ["forecasting"] as const,
