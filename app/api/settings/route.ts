@@ -185,6 +185,9 @@ export async function PATCH(request: NextRequest) {
       updateData.openingHours = body.openingHours;
     }
 
+    // Always stamp the update time so the kiosk can detect changes
+    updateData.updatedAt = new Date().toISOString();
+
     await settingsCol.doc(session.uid).set(updateData, { merge: true });
 
     const updatedDoc = await settingsCol.doc(session.uid).get();

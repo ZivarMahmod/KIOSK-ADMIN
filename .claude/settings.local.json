@@ -42,7 +42,8 @@
       "Bash(npx tsx -e \":*)",
       "Bash(npx tsx:*)",
       "Bash(xargs grep:*)",
-      "Bash(grep -r \"prisma\\\\|mongodb\\\\|mongoose\" /c/Users/Zivar-PC/Desktop/Kiosk-admin/app --include=*.ts --include=*.tsx)"
+      "Bash(grep -r \"prisma\\\\|mongodb\\\\|mongoose\" /c/Users/Zivar-PC/Desktop/Kiosk-admin/app --include=*.ts --include=*.tsx)",
+      "Bash(curl -sI \"https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js\")"
     ]
   }
 }
