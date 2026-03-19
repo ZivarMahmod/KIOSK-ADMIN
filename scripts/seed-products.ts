@@ -105,7 +105,7 @@ async function seed() {
       .get();
 
     if (!existing.empty) {
-      categoryMap[cat.name] = existing.docs[0].id;
+      categoryMap[cat.name] = existing.docs[0]!.id;
       console.log(`  ✅ ${cat.emoji} ${cat.name} (exists)`);
     } else {
       const ref = await db.collection("categories").add({
