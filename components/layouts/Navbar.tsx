@@ -130,14 +130,6 @@ export default function Navbar({ children }: NavbarProps) {
         description: "You have been logged out successfully. See you soon!",
       });
 
-      // Clear localStorage keys synchronously (no React re-renders).
-      localStorage.removeItem("isAuth");
-      localStorage.removeItem("isLoggedIn");
-      localStorage.removeItem("token");
-      localStorage.removeItem("getSession");
-      localStorage.removeItem("prevUserId");
-      localStorage.removeItem("stock-inventory-query-cache");
-
       // Await the server-side logout so the httpOnly session_id cookie is
       // cleared via Set-Cookie BEFORE the browser navigates to /login.
       // Use Firebase signOut via auth context, then redirect

@@ -1,84 +1,47 @@
-/**
- * Stock Allocation query hooks
- */
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient, getErrorMessage } from "@/lib/api";
 import { queryKeys, invalidateAllRelatedQueries } from "@/lib/react-query";
 import { useToast } from "@/hooks/use-toast";
-import type {
-  StockAllocation,
-  CreateStockAllocationInput,
-  WarehouseStockSummary,
-} from "@/types";
+import type { StockAllocation, CreateStockAllocationInput, WarehouseStockSummary } from "@/types";
 
-/**
- * Get all stock allocations
- */
+async function apiFetch(url: string, options?: RequestInit) {
+  const { auth } = await import("@/lib/firebase");
+  const token = await auth.currentUser?.getIdToken();
+  const res = await fetch(`/api${url}`, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options?.headers },
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export function useStockAllocations() {
-  return useQuery({
+  return useQuery<StockAllocation[]>({
     queryKey: queryKeys.stockAllocation.lists(),
-    queryFn: async () => {
-      const response = await apiClient.stockAllocations.getAll();
-      return response.data;
-    },
+    queryFn: () => apiFetch("/stock-allocations"),
   });
 }
 
-/**
- * Get warehouse stock summary
- */
 export function useWarehouseStockSummary() {
-  return useQuery({
+  return useQuery<WarehouseStockSummary[]>({
     queryKey: queryKeys.stockAllocation.summary(),
-    queryFn: async () => {
-      const response = await apiClient.stockAllocations.getSummary();
-      return response.data;
-    },
+    queryFn: () => apiFetch("/stock-allocations?summary=true"),
   });
 }
 
-/**
- * Get stock allocations for a specific warehouse
- */
 export function useStockByWarehouse(warehouseId: string) {
-  return useQuery({
+  return useQuery<StockAllocation[]>({
     queryKey: queryKeys.stockAllocation.byWarehouse(warehouseId),
-    queryFn: async () => {
-      const response =
-        await apiClient.stockAllocations.getByWarehouse(warehouseId);
-      return response.data;
-    },
+    queryFn: () => apiFetch(`/stock-allocations?warehouseId=${warehouseId}`),
     enabled: !!warehouseId,
   });
 }
 
-/**
- * Create or update stock allocation
- */
 export function useCreateStockAllocation() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   const { toast } = useToast();
-
   return useMutation({
-    mutationFn: async (data: CreateStockAllocationInput) => {
-      const response = await apiClient.stockAllocations.create(data);
-      return response.data;
-    },
-    onSuccess: (data: StockAllocation) => {
-      invalidateAllRelatedQueries(queryClient);
-      toast({
-        title: "Stock allocation saved",
-        description: `Stock allocated to ${data.warehouse?.name ?? "warehouse"}.`,
-      });
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: "Allocation failed",
-        description:
-          getErrorMessage(error) || "Failed to save stock allocation.",
-        variant: "destructive",
-      });
-    },
+    mutationFn: (data: CreateStockAllocationInput) => apiFetch("/stock-allocations", { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: () => { invalidateAllRelatedQueries(qc); toast({ title: "Lagerallokering skapad" }); },
+    onError: (e) => { toast({ title: "Fel", description: String(e), variant: "destructive" }); },
   });
 }
