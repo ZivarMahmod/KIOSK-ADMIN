@@ -46,14 +46,14 @@ export default function WarehouseList() {
     ? (dashboardQuery.data ?? null)
     : null;
 
-  const warehouseTypeBadges = useMemo(() => {
-    const dist = dashboard?.warehouseAnalytics?.typeDistribution ?? [];
-    const typeMap = new Map(
-      dist.map((t) => [(t.type ?? "").toLowerCase().trim(), t.count]),
+  const warehouseTypeBadges: { label: string; value: number }[] = useMemo(() => {
+    const dist: any[] = dashboard?.warehouseAnalytics?.typeDistribution ?? [];
+    const typeMap = new Map<string, number>(
+      dist.map((t: any) => [(t.type ?? "").toLowerCase().trim(), t.count as number]),
     );
     const knownTypes = ["main", "secondary", "storage", "hub", "store"];
     const othersCount = [...typeMap.entries()].reduce(
-      (sum, [k, v]) => (knownTypes.includes(k) ? sum : sum + v),
+      (sum: number, [k, v]: [string, number]) => (knownTypes.includes(k) ? sum : sum + v),
       0,
     );
     return [
@@ -67,15 +67,15 @@ export default function WarehouseList() {
   }, [dashboard?.warehouseAnalytics?.typeDistribution]);
 
   /** Type badges for user /warehouses page cards (from dashboard stats) */
-  const warehousesPageTypeBadges = useMemo(() => {
-    const dist =
+  const warehousesPageTypeBadges: { label: string; value: number }[] = useMemo(() => {
+    const dist: any[] =
       warehousesPageStats?.warehouseAnalytics?.typeDistribution ?? [];
-    const typeMap = new Map(
-      dist.map((t) => [(t.type ?? "").toLowerCase().trim(), t.count]),
+    const typeMap = new Map<string, number>(
+      dist.map((t: any) => [(t.type ?? "").toLowerCase().trim(), t.count as number]),
     );
     const knownTypes = ["main", "secondary", "storage", "hub", "store"];
     const othersCount = [...typeMap.entries()].reduce(
-      (sum, [k, v]) => (knownTypes.includes(k) ? sum : sum + v),
+      (sum: number, [k, v]: [string, number]) => (knownTypes.includes(k) ? sum : sum + v),
       0,
     );
     return [

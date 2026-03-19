@@ -1,144 +1,60 @@
-/**
- * Warehouse query hooks
- * TanStack Query hooks for warehouse data fetching and mutations
- */
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient, getErrorMessage } from "@/lib/api";
 import { queryKeys, invalidateAllRelatedQueries } from "@/lib/react-query";
 import { useToast } from "@/hooks/use-toast";
-import type {
-  Warehouse,
-  CreateWarehouseInput,
-  UpdateWarehouseInput,
-} from "@/types";
+import type { Warehouse, CreateWarehouseInput, UpdateWarehouseInput } from "@/types";
 
-/**
- * Fetch all warehouses
- */
+async function apiFetch(url: string, options?: RequestInit) {
+  const { auth } = await import("@/lib/firebase");
+  const token = await auth.currentUser?.getIdToken();
+  const res = await fetch(`/api${url}`, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options?.headers },
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export function useWarehouses() {
-  return useQuery({
+  return useQuery<Warehouse[]>({
     queryKey: queryKeys.warehouses.lists(),
-    queryFn: async () => {
-      const response = await apiClient.warehouses.getAll();
-      return response.data;
-    },
+    queryFn: () => apiFetch("/warehouses"),
   });
 }
 
-/**
- * Fetch single warehouse by ID
- */
 export function useWarehouse(warehouseId: string) {
-  return useQuery({
+  return useQuery<Warehouse>({
     queryKey: queryKeys.warehouses.detail(warehouseId),
-    queryFn: async () => {
-      const response = await apiClient.warehouses.getById(warehouseId);
-      return response.data;
-    },
+    queryFn: () => apiFetch(`/warehouses/${warehouseId}`),
     enabled: !!warehouseId,
   });
 }
 
-/**
- * Create warehouse mutation
- */
 export function useCreateWarehouse() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   const { toast } = useToast();
-
   return useMutation({
-    mutationFn: async (data: CreateWarehouseInput) => {
-      const response = await apiClient.warehouses.create(data);
-      return response.data;
-    },
-    onSuccess: (newWarehouse) => {
-      invalidateAllRelatedQueries(queryClient);
-      toast({
-        title: "Success",
-        description: `Warehouse "${newWarehouse.name}" created successfully`,
-      });
-      return newWarehouse;
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      });
-    },
+    mutationFn: (data: CreateWarehouseInput) => apiFetch("/warehouses", { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: (w) => { invalidateAllRelatedQueries(qc); toast({ title: "Lagerplats skapad", description: `"${w.name}" har skapats` }); },
+    onError: (e) => { toast({ title: "Fel", description: String(e), variant: "destructive" }); },
   });
 }
 
-/**
- * Update warehouse mutation
- */
 export function useUpdateWarehouse() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   const { toast } = useToast();
-
   return useMutation({
-    mutationFn: async (data: UpdateWarehouseInput) => {
-      const response = await apiClient.warehouses.update(data);
-      return response.data;
-    },
-    onSuccess: (updatedWarehouse) => {
-      invalidateAllRelatedQueries(queryClient);
-      if (updatedWarehouse.id) {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.warehouses.detail(updatedWarehouse.id),
-        });
-      }
-      toast({
-        title: "Success",
-        description: `Warehouse "${updatedWarehouse.name}" updated successfully`,
-      });
-      return updatedWarehouse;
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      });
-    },
+    mutationFn: (data: UpdateWarehouseInput) => apiFetch(`/warehouses/${data.id}`, { method: "PUT", body: JSON.stringify(data) }),
+    onSuccess: (w) => { invalidateAllRelatedQueries(qc); toast({ title: "Lagerplats uppdaterad", description: `"${w.name}" har uppdaterats` }); },
+    onError: (e) => { toast({ title: "Fel", description: String(e), variant: "destructive" }); },
   });
 }
 
-/**
- * Delete warehouse mutation
- */
 export function useDeleteWarehouse() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   const { toast } = useToast();
-
   return useMutation({
-    mutationFn: async (id: string) => {
-      const warehouses = queryClient.getQueryData<Warehouse[]>(
-        queryKeys.warehouses.lists(),
-      );
-      const warehouseToDelete = warehouses?.find((w) => w.id === id);
-      const warehouseName = warehouseToDelete?.name || "warehouse";
-
-      await apiClient.warehouses.delete(id);
-      return { id, name: warehouseName };
-    },
-    onSuccess: (deletedData) => {
-      invalidateAllRelatedQueries(queryClient);
-      queryClient.removeQueries({
-        queryKey: queryKeys.warehouses.detail(deletedData.id),
-      });
-      toast({
-        title: "Success",
-        description: `Warehouse "${deletedData.name}" deleted successfully`,
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      });
-    },
+    mutationFn: (id: string) => apiFetch(`/warehouses/${id}`, { method: "DELETE" }),
+    onSuccess: () => { invalidateAllRelatedQueries(qc); toast({ title: "Lagerplats raderad" }); },
+    onError: (e) => { toast({ title: "Fel", description: String(e), variant: "destructive" }); },
   });
 }

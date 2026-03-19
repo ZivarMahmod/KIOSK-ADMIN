@@ -1,164 +1,60 @@
-/**
- * Product query hooks
- * useProducts() / useProduct(id) for reads; useCreateProduct(), useUpdateProduct(), useDeleteProduct()
- * for mutations. Mutations call invalidateAllRelatedQueries so lists and dashboards refresh.
- */
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient, getErrorMessage, isAxiosError } from "@/lib/api";
 import { queryKeys, invalidateAllRelatedQueries } from "@/lib/react-query";
 import { useToast } from "@/hooks/use-toast";
-import type {
-  Product,
-  CreateProductInput,
-  UpdateProductInput,
-} from "@/types";
+import type { Product, CreateProductInput, UpdateProductInput } from "@/types";
 
-/**
- * Fetch all products
- * Query hook for getting the list of all products
- */
+async function apiFetch(url: string, options?: RequestInit) {
+  const { auth } = await import("@/lib/firebase");
+  const token = await auth.currentUser?.getIdToken();
+  const res = await fetch(`/api${url}`, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options?.headers },
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export function useProducts() {
-  return useQuery({
+  return useQuery<Product[]>({
     queryKey: queryKeys.products.lists(),
-    queryFn: async () => {
-      const response = await apiClient.products.getAll();
-      return response.data;
-    },
+    queryFn: () => apiFetch("/products"),
   });
 }
 
-/**
- * Fetch single product by ID
- * Query hook for getting a single product with all related data
- */
 export function useProduct(productId: string) {
   return useQuery<Product>({
     queryKey: queryKeys.products.detail(productId),
-    queryFn: async () => {
-      const response = await apiClient.products.getById(productId);
-      return response.data;
-    },
-    // Only fetch if productId is provided
+    queryFn: () => apiFetch(`/products/${productId}`),
     enabled: !!productId,
   });
 }
 
-/**
- * Create product mutation
- * Mutation hook for creating a new product
- */
 export function useCreateProduct() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   const { toast } = useToast();
-
   return useMutation({
-    mutationFn: async (data: CreateProductInput) => {
-      const response = await apiClient.products.create(data);
-      return response.data;
-    },
-    onSuccess: (newProduct) => {
-      invalidateAllRelatedQueries(queryClient);
-      const name = (newProduct as { name?: string })?.name ?? "Product";
-      toast({
-        title: "Success",
-        description: `Product "${name}" created successfully`,
-      });
-      return newProduct;
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      });
-    },
+    mutationFn: (data: CreateProductInput) => apiFetch("/products", { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: (p) => { invalidateAllRelatedQueries(qc); toast({ title: "Produkt skapad", description: `"${p.name}" har skapats` }); },
+    onError: (e) => { toast({ title: "Fel", description: String(e), variant: "destructive" }); },
   });
 }
 
-/**
- * Update product mutation
- * Mutation hook for updating an existing product
- */
 export function useUpdateProduct() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   const { toast } = useToast();
-
   return useMutation({
-    mutationFn: async (data: UpdateProductInput) => {
-      const response = await apiClient.products.update(data);
-      return response.data;
-    },
-    onSuccess: (updatedProduct) => {
-      invalidateAllRelatedQueries(queryClient);
-      if (updatedProduct.id) {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.products.detail(updatedProduct.id),
-        });
-      }
-      const name = (updatedProduct as { name?: string })?.name ?? "Product";
-      toast({
-        title: "Success",
-        description: `Product "${name}" updated successfully`,
-      });
-      return updatedProduct;
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      });
-    },
+    mutationFn: (data: UpdateProductInput) => apiFetch(`/products/${data.id}`, { method: "PUT", body: JSON.stringify(data) }),
+    onSuccess: (p) => { invalidateAllRelatedQueries(qc); toast({ title: "Produkt uppdaterad", description: `"${p.name}" har uppdaterats` }); },
+    onError: (e) => { toast({ title: "Fel", description: String(e), variant: "destructive" }); },
   });
 }
 
-/**
- * Delete product mutation
- * Mutation hook for deleting a product
- */
 export function useDeleteProduct() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   const { toast } = useToast();
-
   return useMutation({
-    mutationFn: async (id: string) => {
-      // Get product name before deleting for dynamic toast message (list or detail cache)
-      const products = queryClient.getQueryData<Product[]>(
-        queryKeys.products.lists()
-      );
-      let productName =
-        products?.find((p) => p.id === id)?.name ??
-        (queryClient.getQueryData<{ name?: string }>(
-          queryKeys.products.detail(id)
-        )?.name ?? "Product");
-
-      await apiClient.products.delete(id);
-      return { id, name: productName };
-    },
-    onSuccess: (deletedData) => {
-      invalidateAllRelatedQueries(queryClient);
-      queryClient.removeQueries({
-        queryKey: queryKeys.products.detail(deletedData.id),
-      });
-      toast({
-        title: "Success",
-        description: `Product "${deletedData.name}" deleted successfully`,
-      });
-    },
-    onError: (error) => {
-      // Extract error message - getErrorMessage handles ApiError and AxiosError
-      const errorMessage = getErrorMessage(error);
-      
-      // Check if this is a conflict error (409) - product cannot be deleted due to related orders/invoices
-      const isConflictError = isAxiosError(error) && error.response?.status === 409;
-
-      toast({
-        title: isConflictError ? "Cannot Delete Product" : "Error Deleting Product",
-        description: errorMessage || "Failed to delete product. Please try again.",
-        variant: "destructive",
-      });
-    },
+    mutationFn: (id: string) => apiFetch(`/products/${id}`, { method: "DELETE" }),
+    onSuccess: () => { invalidateAllRelatedQueries(qc); toast({ title: "Produkt raderad" }); },
+    onError: (e) => { toast({ title: "Fel", description: String(e), variant: "destructive" }); },
   });
 }
-
