@@ -27,9 +27,9 @@ export default function LoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (isLoggedIn && !navigatingFromSubmitRef.current) {
-      window.location.href = "/";
+      router.push("/admin");
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, router]);
 
   /**
    * Handle form submission for email/password login
@@ -54,7 +54,7 @@ export default function LoginPage() {
       setEmail("");
       setPassword("");
 
-      window.location.href = "/";
+      router.push("/admin");
     } catch (error: unknown) {
       const axiosErr = error as {
         response?: { data?: { error?: string }; status?: number };

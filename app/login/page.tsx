@@ -1,16 +1,9 @@
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth-server";
 import LoginPage from "@/components/Pages/LoginPage";
 
 /**
- * Login route — server component.
- * If user is already logged in (session cookie), redirect to home.
- * Otherwise render the client LoginPage.
+ * Login route — renders the login page.
+ * If user is already logged in, LoginPage handles redirect client-side.
  */
-export default async function LoginRoute() {
-  const user = await getSession();
-  if (user) {
-    redirect("/");
-  }
+export default function LoginRoute() {
   return <LoginPage />;
 }
