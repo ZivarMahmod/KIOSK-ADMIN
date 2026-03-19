@@ -22,10 +22,13 @@ export async function GET(request: NextRequest) {
 
     const snapshot = await wishesCol
       .where("userId", "==", session.uid)
-      .orderBy("timestamp", "desc")
       .get();
 
-    const wishes = queryToArray(snapshot);
+    const wishes = queryToArray(snapshot).sort((a: any, b: any) => {
+      const aTime = a.timestamp?._seconds || 0;
+      const bTime = b.timestamp?._seconds || 0;
+      return bTime - aTime;
+    });
 
     return NextResponse.json(wishes);
   } catch (error) {

@@ -17,13 +17,15 @@ export async function GET(request: NextRequest) {
 
     // Fetch all data in parallel
     const [categoriesSnap, productsSnap, offersSnap, settingsDoc] = await Promise.all([
-      categoriesCol.where("userId", "==", userId).orderBy("name").get(),
+      categoriesCol.where("userId", "==", userId).get(),
       productsCol.where("userId", "==", userId).where("status", "==", true).get(),
       offersCol.where("userId", "==", userId).get(),
       settingsCol.doc(userId).get(),
     ]);
 
-    const categories = queryToArray(categoriesSnap);
+    const categories = queryToArray(categoriesSnap).sort((a: any, b: any) => {
+      return (a.name || "").localeCompare(b.name || "");
+    });
     const products = queryToArray(productsSnap);
     const offers = queryToArray(offersSnap);
 

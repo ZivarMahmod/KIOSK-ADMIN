@@ -22,20 +22,27 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "all";
 
-    let query: FirebaseFirestore.Query = receiptsCol
+    // Fetch all receipts then filter in JS to avoid composite index requirement
+    const snapshot = await receiptsCol
       .where("userId", "==", session.uid)
-      .where("status", "==", "registrerad");
+      .get();
+    let receipts = queryToArray(snapshot) as any[];
 
-    // Apply date filter based on period
-    if (period === "7days" || period === "week") {
+    // Filter by period in JS
+    if (period === "today") {
+      const todayStr = new Date().toISOString().split("T")[0]!;
+      receipts = receipts.filter((r: any) => r.datum === todayStr);
+    } else if (period === "7days" || period === "week") {
       const now = new Date();
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const dateStr = sevenDaysAgo.toISOString().split("T")[0];
-      query = query.where("datum", ">=", dateStr);
+      const dateStr = sevenDaysAgo.toISOString().split("T")[0]!;
+      receipts = receipts.filter((r: any) => (r.datum || "") >= dateStr);
+    } else if (period === "30days") {
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const dateStr = thirtyDaysAgo.toISOString().split("T")[0]!;
+      receipts = receipts.filter((r: any) => (r.datum || "") >= dateStr);
     }
-
-    const snapshot = await query.get();
-    const receipts = queryToArray(snapshot) as any[];
 
     let totalSales = 0;
     let totalItems = 0;

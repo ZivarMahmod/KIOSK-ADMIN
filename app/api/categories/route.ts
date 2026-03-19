@@ -22,10 +22,13 @@ export async function GET(request: NextRequest) {
 
     const snapshot = await categoriesCol
       .where("userId", "==", session.uid)
-      .orderBy("createdAt", "desc")
       .get();
 
-    const categories = queryToArray(snapshot);
+    const categories = queryToArray(snapshot).sort((a: any, b: any) => {
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
 
     return NextResponse.json(categories);
   } catch (error) {

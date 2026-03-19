@@ -22,10 +22,13 @@ export async function GET(request: NextRequest) {
 
     const snapshot = await productsCol
       .where("userId", "==", session.uid)
-      .orderBy("createdAt", "desc")
       .get();
 
-    const products = queryToArray(snapshot);
+    const products = queryToArray(snapshot).sort((a: any, b: any) => {
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
 
     // Fetch category names for display
     const categoryIds = [...new Set(products.map((p: any) => p.categoryId).filter(Boolean))];

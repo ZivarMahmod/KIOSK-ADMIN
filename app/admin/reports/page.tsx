@@ -6,10 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BarChart3, TrendingUp, ShoppingCart, Clock } from "lucide-react";
 
 interface ReportData {
-  totalReceipts: number;
+  totalSales: number;
   totalRevenue: number;
   totalItems: number;
-  topProducts: { name: string; count: number; revenue: number }[];
+  salesByProduct: { name: string; count: number; revenue: number }[];
+  salesByCategory: { category: string; count: number; revenue: number }[];
 }
 
 export default function ReportsPage() {
@@ -67,7 +68,7 @@ export default function ReportsPage() {
                 <ShoppingCart className="h-5 w-5 text-indigo-500" />
                 <p className="text-sm text-gray-500 dark:text-gray-400">Antal kvitton</p>
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{data.totalReceipts}</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{data.totalSales}</p>
             </div>
             <div className="rounded-xl border border-indigo-400/20 bg-indigo-50/50 dark:bg-indigo-900/10 p-5">
               <div className="flex items-center gap-3 mb-2">
@@ -99,10 +100,10 @@ export default function ReportsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.topProducts.length === 0 ? (
+                {(data.salesByProduct || []).length === 0 ? (
                   <TableRow><TableCell colSpan={4} className="text-center py-8 text-gray-500">Ingen försäljningsdata ännu</TableCell></TableRow>
                 ) : (
-                  data.topProducts.map((product, i) => (
+                  (data.salesByProduct || []).sort((a, b) => b.revenue - a.revenue).slice(0, 10).map((product, i) => (
                     <TableRow key={product.name} className="hover:bg-indigo-50/30 dark:hover:bg-white/5">
                       <TableCell className="font-medium text-gray-500">{i + 1}</TableCell>
                       <TableCell className="font-medium text-gray-900 dark:text-white">{product.name}</TableCell>

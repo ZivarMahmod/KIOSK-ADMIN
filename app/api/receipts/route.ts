@@ -24,22 +24,25 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const tagType = searchParams.get("tagType");
 
-    let query: FirebaseFirestore.Query = receiptsCol.where("userId", "==", session.uid);
+    // Fetch all receipts for user, filter in JS to avoid composite indexes
+    const snapshot = await receiptsCol.where("userId", "==", session.uid).get();
+    let receipts = queryToArray(snapshot) as any[];
 
+    // Apply filters in JS
     if (status === "registered") {
-      query = query.where("status", "==", "registrerad");
+      receipts = receipts.filter((r: any) => r.status === "registrerad");
     } else if (status === "unregistered") {
-      query = query.where("status", "==", "ej_registrerad");
+      receipts = receipts.filter((r: any) => r.status === "ej_registrerad");
     } else if (status === "tagged") {
-      query = query.where("tagged", "==", true);
+      receipts = receipts.filter((r: any) => r.tagged === true);
     }
 
     if (tagType) {
-      query = query.where("tagType", "==", tagType);
+      receipts = receipts.filter((r: any) => r.tagType === tagType);
     }
 
-    const snapshot = await query.orderBy("datum", "desc").get();
-    const receipts = queryToArray(snapshot);
+    // Sort by datum desc
+    receipts.sort((a: any, b: any) => (b.datum || "").localeCompare(a.datum || ""));
 
     return NextResponse.json(receipts);
   } catch (error) {
