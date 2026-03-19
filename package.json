@@ -1,26 +1,12 @@
 {
-  "name": "stock-inventory",
-  "version": "2.0.1",
+  "name": "zivert-kiosk-admin",
+  "version": "3.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
-    "postinstall": "npx prisma generate",
-    "build": "npx prisma generate && next build",
+    "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
-    "prisma": "prisma",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:push": "prisma db push",
-    "prisma:studio": "prisma studio",
-    "script:check-all-data": "tsx scripts/check-all-data.ts",
-    "script:delete-all-data": "tsx scripts/delete-all-data.ts",
-    "script:delete-all-suppliers": "tsx scripts/delete-all-suppliers.ts",
-    "script:delete-all-categories": "tsx scripts/delete-all-categories.ts",
-    "script:delete-user": "tsx scripts/delete-user.ts",
-    "script:backfill-order-stock": "tsx scripts/backfill-order-stock.ts",
-    "script:check-order-stock": "tsx scripts/check-order-product-stock.ts",
-    "script:fix-product2-stock": "tsx scripts/fix-product2-stock.ts"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
