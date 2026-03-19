@@ -55,6 +55,15 @@ export async function GET(
       status: category.status,
       description: category.description || null,
       notes: category.notes || null,
+      emoji: category.emoji || "",
+      color: category.color || "",
+      subtitle: category.subtitle || "",
+      parentId: category.parentId || null,
+      visibleFrom: category.visibleFrom || null,
+      visibleTo: category.visibleTo || null,
+      bannerImageUrl: category.bannerImageUrl || null,
+      sortOrder: category.sortOrder ?? 0,
+      showOnKiosk: category.showOnKiosk !== false,
       userId: category.userId,
       createdAt: category.createdAt?.toDate?.()?.toISOString?.() || category.createdAt || null,
       updatedAt: category.updatedAt?.toDate?.()?.toISOString?.() || category.updatedAt || null,
@@ -110,7 +119,10 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, status, description, notes, emoji, color, subtitle } = body;
+    const {
+      name, status, description, notes, emoji, color, subtitle,
+      parentId, visibleFrom, visibleTo, bannerImageUrl, sortOrder, showOnKiosk,
+    } = body;
 
     if (!name || typeof name !== "string" || name.trim() === "") {
       return NextResponse.json(
@@ -133,6 +145,12 @@ export async function PUT(
     if (emoji !== undefined) updateData.emoji = typeof emoji === "string" ? emoji.trim() : "";
     if (color !== undefined) updateData.color = typeof color === "string" ? color.trim() : "";
     if (subtitle !== undefined) updateData.subtitle = typeof subtitle === "string" ? subtitle.trim() : "";
+    if (parentId !== undefined) updateData.parentId = parentId && typeof parentId === "string" ? parentId.trim() : null;
+    if (visibleFrom !== undefined) updateData.visibleFrom = visibleFrom && typeof visibleFrom === "string" ? visibleFrom.trim() : null;
+    if (visibleTo !== undefined) updateData.visibleTo = visibleTo && typeof visibleTo === "string" ? visibleTo.trim() : null;
+    if (bannerImageUrl !== undefined) updateData.bannerImageUrl = bannerImageUrl && typeof bannerImageUrl === "string" ? bannerImageUrl.trim() : null;
+    if (sortOrder !== undefined) updateData.sortOrder = typeof sortOrder === "number" ? sortOrder : 0;
+    if (showOnKiosk !== undefined) updateData.showOnKiosk = Boolean(showOnKiosk);
 
     await docRef.update(updateData);
 

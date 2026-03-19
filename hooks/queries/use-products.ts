@@ -58,3 +58,45 @@ export function useDeleteProduct() {
     onError: (e) => { toast({ title: "Fel", description: String(e), variant: "destructive" }); },
   });
 }
+
+/**
+ * Bulk update: change category or visibility for multiple products at once
+ */
+export function useBulkUpdateProducts() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (items: UpdateProductInput[]) => {
+      const results = await Promise.all(
+        items.map((data) =>
+          apiFetch(`/products/${data.id}`, { method: "PUT", body: JSON.stringify(data) })
+        )
+      );
+      return results;
+    },
+    onSuccess: (_res, items) => {
+      invalidateAllRelatedQueries(qc);
+      toast({ title: "Produkter uppdaterade", description: `${items.length} produkter har uppdaterats` });
+    },
+    onError: (e) => { toast({ title: "Fel", description: String(e), variant: "destructive" }); },
+  });
+}
+
+/**
+ * Bulk delete multiple products
+ */
+export function useBulkDeleteProducts() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map((id) => apiFetch(`/products/${id}`, { method: "DELETE" })));
+      return ids;
+    },
+    onSuccess: (_res, ids) => {
+      invalidateAllRelatedQueries(qc);
+      toast({ title: "Produkter raderade", description: `${ids.length} produkter har raderats` });
+    },
+    onError: (e) => { toast({ title: "Fel", description: String(e), variant: "destructive" }); },
+  });
+}

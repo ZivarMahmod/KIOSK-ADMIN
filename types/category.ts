@@ -3,22 +3,30 @@
  */
 
 /**
- * Category interface matching Prisma schema
+ * Category interface matching Firestore schema
  */
 export interface Category {
   id: string;
   name: string;
-  userId: string; // Created by user ID
-  status: boolean; // Active/Inactive status (default: true)
-  description?: string | null; // Optional description field
-  notes?: string | null; // Optional notes field
-  emoji?: string; // Emoji icon for kiosk display
-  color?: string; // Color hex for kiosk display
-  subtitle?: string; // Subtitle shown on kiosk
+  userId: string;
+  status: boolean;
+  description?: string | null;
+  notes?: string | null;
+  emoji?: string;
+  color?: string;
+  subtitle?: string;
+  // New enhanced fields
+  parentId?: string | null;       // subcategory support
+  visibleFrom?: string | null;    // "HH:mm" schedule visibility
+  visibleTo?: string | null;      // "HH:mm" schedule visibility
+  bannerImageUrl?: string | null; // banner image
+  sortOrder?: number;             // sort order
+  showOnKiosk?: boolean;          // show on kiosk toggle
+
   createdAt: Date;
   updatedAt?: Date | null;
-  createdBy: string; // User ID who created the category
-  updatedBy?: string | null; // User ID who last updated the category
+  createdBy: string;
+  updatedBy?: string | null;
   /** Extended by API for detail page */
   creator?: { name: string; email: string } | null;
   updater?: { name: string; email: string } | null;
@@ -47,7 +55,6 @@ export interface Category {
     price: number;
     orderDate: string;
     subtotal: number;
-    /** Proportional share of order total (includes tax, shipping, discount) */
     proportionalAmount?: number;
     orderTotal?: number;
     orderStatus: string;
@@ -60,12 +67,18 @@ export interface Category {
 export interface CreateCategoryInput {
   name: string;
   userId: string;
-  status?: boolean; // Optional, defaults to true
-  description?: string | null; // Optional description
-  notes?: string | null; // Optional notes
+  status?: boolean;
+  description?: string | null;
+  notes?: string | null;
   emoji?: string;
   color?: string;
   subtitle?: string;
+  parentId?: string | null;
+  visibleFrom?: string | null;
+  visibleTo?: string | null;
+  bannerImageUrl?: string | null;
+  sortOrder?: number;
+  showOnKiosk?: boolean;
 }
 
 /**
@@ -74,11 +87,16 @@ export interface CreateCategoryInput {
 export interface UpdateCategoryInput {
   id: string;
   name: string;
-  status?: boolean; // Optional status update
-  description?: string | null; // Optional description update
-  notes?: string | null; // Optional notes update
+  status?: boolean;
+  description?: string | null;
+  notes?: string | null;
   emoji?: string;
   color?: string;
   subtitle?: string;
+  parentId?: string | null;
+  visibleFrom?: string | null;
+  visibleTo?: string | null;
+  bannerImageUrl?: string | null;
+  sortOrder?: number;
+  showOnKiosk?: boolean;
 }
-

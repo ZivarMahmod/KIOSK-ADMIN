@@ -45,3 +45,45 @@ export function useCreateStockAllocation() {
     onError: (e) => { toast({ title: "Fel", description: String(e), variant: "destructive" }); },
   });
 }
+
+export function useAdjustStock() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: (data: { productId: string; warehouseId: string; quantityChange: number; reason: string; notes?: string }) =>
+      apiFetch("/stock-allocations", { method: "PUT", body: JSON.stringify(data) }),
+    onSuccess: () => { invalidateAllRelatedQueries(qc); toast({ title: "Lagerjustering sparad" }); },
+    onError: (e) => { toast({ title: "Fel", description: String(e), variant: "destructive" }); },
+  });
+}
+
+export function useTransferStock() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: (data: { productId: string; fromWarehouseId: string; toWarehouseId: string; quantity: number }) =>
+      apiFetch("/stock-allocations", { method: "PATCH", body: JSON.stringify(data) }),
+    onSuccess: () => { invalidateAllRelatedQueries(qc); toast({ title: "Lagerflytt genomford" }); },
+    onError: (e) => { toast({ title: "Fel", description: String(e), variant: "destructive" }); },
+  });
+}
+
+export interface StockAdjustmentLog {
+  id: string;
+  productId: string;
+  warehouseId: string;
+  oldQuantity: number;
+  newQuantity: number;
+  quantityChange: number;
+  reason: string;
+  notes: string | null;
+  userId: string;
+  createdAt: string;
+}
+
+export function useStockAdjustmentLog() {
+  return useQuery<StockAdjustmentLog[]>({
+    queryKey: [...queryKeys.stockAllocation.all, "adjustments"],
+    queryFn: () => apiFetch("/stock-allocations?adjustments=true"),
+  });
+}

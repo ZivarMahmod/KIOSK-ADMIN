@@ -25,6 +25,10 @@ export async function GET(request: NextRequest) {
       .get();
 
     const categories = queryToArray(snapshot).sort((a: any, b: any) => {
+      // Sort by sortOrder first, then by createdAt
+      const aOrder = a.sortOrder ?? 999;
+      const bOrder = b.sortOrder ?? 999;
+      if (aOrder !== bOrder) return aOrder - bOrder;
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
       return bTime - aTime;
@@ -52,7 +56,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, status, description, notes, emoji, color, subtitle } = body;
+    const {
+      name, status, description, notes, emoji, color, subtitle,
+      parentId, visibleFrom, visibleTo, bannerImageUrl, sortOrder, showOnKiosk,
+    } = body;
 
     if (!name || typeof name !== "string" || name.trim() === "") {
       return NextResponse.json(
@@ -71,6 +78,12 @@ export async function POST(request: NextRequest) {
       emoji: emoji && typeof emoji === "string" ? emoji.trim() : "",
       color: color && typeof color === "string" ? color.trim() : "",
       subtitle: subtitle && typeof subtitle === "string" ? subtitle.trim() : "",
+      parentId: parentId && typeof parentId === "string" ? parentId.trim() : null,
+      visibleFrom: visibleFrom && typeof visibleFrom === "string" ? visibleFrom.trim() : null,
+      visibleTo: visibleTo && typeof visibleTo === "string" ? visibleTo.trim() : null,
+      bannerImageUrl: bannerImageUrl && typeof bannerImageUrl === "string" ? bannerImageUrl.trim() : null,
+      sortOrder: typeof sortOrder === "number" ? sortOrder : 0,
+      showOnKiosk: showOnKiosk !== undefined ? Boolean(showOnKiosk) : true,
       createdAt: now,
       updatedAt: null,
     });

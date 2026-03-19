@@ -1,7 +1,7 @@
 /**
  * Products API Route Handler
  * GET: List products filtered by userId
- * POST: Create product
+ * POST: Create product with all enhanced kiosk fields
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -9,9 +9,67 @@ import { getSessionFromRequest } from "@/utils/auth";
 import { productsCol, categoriesCol, docToObject, queryToArray } from "@/lib/firestore";
 import { FieldValue } from "firebase-admin/firestore";
 
+/** All enhanced kiosk fields that can be stored on a product */
+const EXTRA_FIELDS = [
+  "brand",
+  "descriptionShort",
+  "descriptionLong",
+  "campaignPrice",
+  "campaignFrom",
+  "campaignTo",
+  "backgroundColor",
+  "textColor",
+  "badgeLabel",
+  "badgeColor",
+  "stockStatus",
+  "minStockLevel",
+  "sortWeight",
+  "showOnKiosk",
+  "allergens",
+  "nutritionInfo",
+  "vatRate",
+  "costPrice",
+  "supplierName",
+  "internalNote",
+] as const;
+
+function pickExtra(body: Record<string, any>) {
+  const out: Record<string, any> = {};
+  for (const key of EXTRA_FIELDS) {
+    if (body[key] !== undefined) {
+      out[key] = body[key];
+    }
+  }
+  return out;
+}
+
+function transformProduct(product: any, categoryName: string) {
+  const base: Record<string, any> = {
+    id: product.id,
+    name: product.name,
+    sku: product.sku || null,
+    price: Number(product.price || 0),
+    quantity: Number(product.quantity || 0),
+    status: product.status,
+    categoryId: product.categoryId || null,
+    category: categoryName,
+    userId: product.userId,
+    createdAt: product.createdAt?.toDate?.()?.toISOString?.() || product.createdAt || null,
+    updatedAt: product.updatedAt?.toDate?.()?.toISOString?.() || product.updatedAt || null,
+    imageUrl: product.imageUrl || null,
+    expirationDate: product.expirationDate?.toDate?.()?.toISOString?.() || product.expirationDate || null,
+  };
+  // Copy all extra fields if they exist on the doc
+  for (const key of EXTRA_FIELDS) {
+    if (product[key] !== undefined) {
+      base[key] = product[key];
+    }
+  }
+  return base;
+}
+
 /**
  * GET /api/products
- * Fetch all products for the authenticated user
  */
 export async function GET(request: NextRequest) {
   try {
@@ -35,7 +93,6 @@ export async function GET(request: NextRequest) {
     const categoryMap = new Map<string, string>();
 
     if (categoryIds.length > 0) {
-      // Firestore 'in' queries support max 30 items
       for (let i = 0; i < categoryIds.length; i += 30) {
         const batch = categoryIds.slice(i, i + 30);
         const catSnap = await categoriesCol.where("__name__", "in", batch).get();
@@ -45,21 +102,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const transformedProducts = products.map((product: any) => ({
-      id: product.id,
-      name: product.name,
-      sku: product.sku,
-      price: Number(product.price || 0),
-      quantity: Number(product.quantity || 0),
-      status: product.status,
-      categoryId: product.categoryId || null,
-      category: categoryMap.get(product.categoryId) || "Unknown",
-      userId: product.userId,
-      createdAt: product.createdAt?.toDate?.()?.toISOString?.() || product.createdAt || null,
-      updatedAt: product.updatedAt?.toDate?.()?.toISOString?.() || product.updatedAt || null,
-      imageUrl: product.imageUrl || null,
-      expirationDate: product.expirationDate?.toDate?.()?.toISOString?.() || product.expirationDate || null,
-    }));
+    const transformedProducts = products.map((product: any) =>
+      transformProduct(product, categoryMap.get(product.categoryId) || "Unknown")
+    );
 
     return NextResponse.json(transformedProducts);
   } catch (error) {
@@ -73,7 +118,6 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/products
- * Create a new product
  */
 export async function POST(request: NextRequest) {
   try {
@@ -94,43 +138,46 @@ export async function POST(request: NextRequest) {
       expirationDate,
     } = body;
 
-    // Validate required fields
-    if (!name || !sku || price === undefined || quantity === undefined) {
+    if (!name) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Name is required" },
         { status: 400 },
       );
     }
 
-    // Check if SKU already exists for this user
-    const existingSnap = await productsCol
-      .where("sku", "==", sku)
-      .where("userId", "==", session.uid)
-      .limit(1)
-      .get();
+    // Check if SKU already exists for this user (only if sku provided)
+    if (sku) {
+      const existingSnap = await productsCol
+        .where("sku", "==", sku)
+        .where("userId", "==", session.uid)
+        .limit(1)
+        .get();
 
-    if (!existingSnap.empty) {
-      return NextResponse.json(
-        { error: "SKU must be unique" },
-        { status: 400 },
-      );
+      if (!existingSnap.empty) {
+        return NextResponse.json(
+          { error: "SKU must be unique" },
+          { status: 400 },
+        );
+      }
     }
 
     const now = FieldValue.serverTimestamp();
-    const docRef = await productsCol.add({
+    const docData: Record<string, any> = {
       name,
-      sku,
-      price: Number(price),
-      quantity: Number(quantity),
-      status: status || "active",
+      sku: sku || null,
+      price: Number(price) || 0,
+      quantity: Number(quantity) || 0,
+      status: status ?? "active",
       userId: session.uid,
       categoryId: categoryId || null,
       imageUrl: imageUrl || null,
       expirationDate: expirationDate ? new Date(expirationDate) : null,
       createdAt: now,
       updatedAt: null,
-    });
+      ...pickExtra(body),
+    };
 
+    const docRef = await productsCol.add(docData);
     const doc = await docRef.get();
     const product = docToObject(doc);
 
@@ -143,23 +190,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const transformedProduct = {
-      id: product.id,
-      name: (product as any).name,
-      sku: (product as any).sku,
-      price: Number((product as any).price || 0),
-      quantity: Number((product as any).quantity || 0),
-      status: (product as any).status,
-      categoryId: (product as any).categoryId || null,
-      category: categoryName,
-      userId: (product as any).userId,
-      createdAt: (product as any).createdAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
-      updatedAt: null,
-      imageUrl: (product as any).imageUrl || null,
-      expirationDate: (product as any).expirationDate?.toDate?.()?.toISOString?.() || null,
-    };
-
-    return NextResponse.json(transformedProduct, { status: 201 });
+    return NextResponse.json(transformProduct(product, categoryName), { status: 201 });
   } catch (error) {
     console.error("Error creating product:", error);
     return NextResponse.json(

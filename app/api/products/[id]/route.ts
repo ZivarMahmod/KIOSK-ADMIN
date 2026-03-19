@@ -1,13 +1,61 @@
 /**
  * Product Detail API Route Handler
  * GET: Get single product by id
- * PUT/PATCH: Update product
+ * PUT/PATCH: Update product with all enhanced kiosk fields
  * DELETE: Delete product
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/utils/auth";
 import { productsCol, categoriesCol, docToObject } from "@/lib/firestore";
+
+/** All enhanced kiosk fields that can be stored on a product */
+const EXTRA_FIELDS = [
+  "brand",
+  "descriptionShort",
+  "descriptionLong",
+  "campaignPrice",
+  "campaignFrom",
+  "campaignTo",
+  "backgroundColor",
+  "textColor",
+  "badgeLabel",
+  "badgeColor",
+  "stockStatus",
+  "minStockLevel",
+  "sortWeight",
+  "showOnKiosk",
+  "allergens",
+  "nutritionInfo",
+  "vatRate",
+  "costPrice",
+  "supplierName",
+  "internalNote",
+] as const;
+
+function transformProduct(product: any, categoryName: string) {
+  const base: Record<string, any> = {
+    id: product.id,
+    name: product.name,
+    sku: product.sku || null,
+    price: Number(product.price || 0),
+    quantity: Number(product.quantity || 0),
+    status: product.status,
+    categoryId: product.categoryId || null,
+    category: categoryName,
+    userId: product.userId,
+    createdAt: product.createdAt?.toDate?.()?.toISOString?.() || product.createdAt || null,
+    updatedAt: product.updatedAt?.toDate?.()?.toISOString?.() || product.updatedAt || null,
+    imageUrl: product.imageUrl || null,
+    expirationDate: product.expirationDate?.toDate?.()?.toISOString?.() || product.expirationDate || null,
+  };
+  for (const key of EXTRA_FIELDS) {
+    if (product[key] !== undefined) {
+      base[key] = product[key];
+    }
+  }
+  return base;
+}
 
 /**
  * GET /api/products/:id
@@ -31,38 +79,20 @@ export async function GET(
 
     const product = docToObject(doc) as any;
 
-    // Verify ownership
     if (product.userId !== session.uid) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
     // Fetch category
-    let category = null;
+    let categoryName = "Unknown";
     if (product.categoryId) {
       const catDoc = await categoriesCol.doc(product.categoryId).get();
       if (catDoc.exists) {
-        const catData = catDoc.data();
-        category = { id: catDoc.id, name: catData?.name, description: catData?.description, status: catData?.status };
+        categoryName = catDoc.data()?.name || "Unknown";
       }
     }
 
-    const transformedProduct = {
-      id: product.id,
-      name: product.name,
-      sku: product.sku,
-      price: Number(product.price || 0),
-      quantity: Number(product.quantity || 0),
-      status: product.status,
-      categoryId: product.categoryId || null,
-      category,
-      userId: product.userId,
-      createdAt: product.createdAt?.toDate?.()?.toISOString?.() || product.createdAt || null,
-      updatedAt: product.updatedAt?.toDate?.()?.toISOString?.() || product.updatedAt || null,
-      imageUrl: product.imageUrl || null,
-      expirationDate: product.expirationDate?.toDate?.()?.toISOString?.() || product.expirationDate || null,
-    };
-
-    return NextResponse.json(transformedProduct);
+    return NextResponse.json(transformProduct(product, categoryName));
   } catch (error) {
     console.error("Error fetching product:", error);
     return NextResponse.json(
@@ -116,6 +146,8 @@ export async function PUT(
     const updateData: Record<string, any> = {
       updatedAt: new Date(),
     };
+
+    // Core fields
     if (name !== undefined) updateData.name = name;
     if (sku !== undefined) updateData.sku = sku;
     if (price !== undefined) updateData.price = Number(price);
@@ -126,6 +158,13 @@ export async function PUT(
     if (expirationDate !== undefined) {
       updateData.expirationDate =
         expirationDate === "" || expirationDate === null ? null : new Date(expirationDate);
+    }
+
+    // All enhanced kiosk fields
+    for (const key of EXTRA_FIELDS) {
+      if (body[key] !== undefined) {
+        updateData[key] = body[key];
+      }
     }
 
     await docRef.update(updateData);
@@ -142,23 +181,7 @@ export async function PUT(
       }
     }
 
-    const transformedProduct = {
-      id: product.id,
-      name: product.name,
-      sku: product.sku,
-      price: Number(product.price || 0),
-      quantity: Number(product.quantity || 0),
-      status: product.status,
-      categoryId: product.categoryId || null,
-      category: categoryName,
-      userId: product.userId,
-      createdAt: product.createdAt?.toDate?.()?.toISOString?.() || product.createdAt || null,
-      updatedAt: product.updatedAt?.toDate?.()?.toISOString?.() || product.updatedAt || null,
-      imageUrl: product.imageUrl || null,
-      expirationDate: product.expirationDate?.toDate?.()?.toISOString?.() || product.expirationDate || null,
-    };
-
-    return NextResponse.json(transformedProduct);
+    return NextResponse.json(transformProduct(product, categoryName));
   } catch (error) {
     console.error("Error updating product:", error);
     return NextResponse.json(
