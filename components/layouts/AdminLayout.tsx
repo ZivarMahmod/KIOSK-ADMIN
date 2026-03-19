@@ -1,6 +1,6 @@
 "use client";
 
-import React, { type ReactNode } from "react";
+import React, { useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/layouts/Navbar";
 import PageWithSidebar from "@/components/layouts/PageWithSidebar";
@@ -14,8 +14,15 @@ import { useAuth } from "@/contexts/auth-context";
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { isLoggedIn, isCheckingAuth } = useAuth();
   const router = useRouter();
+  // Only show the loading spinner on the very first mount (initial auth check).
+  // Once auth has resolved once, never show the spinner again — this prevents
+  // a flash/reload feel when navigating between sidebar links.
+  const hasResolved = useRef(false);
+  if (!isCheckingAuth) {
+    hasResolved.current = true;
+  }
 
-  if (isCheckingAuth) {
+  if (isCheckingAuth && !hasResolved.current) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-sky-500 border-t-transparent rounded-full" />
@@ -23,7 +30,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!isLoggedIn) {
+  if (!isLoggedIn && !isCheckingAuth) {
     router.push("/login");
     return null;
   }
