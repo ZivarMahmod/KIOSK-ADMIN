@@ -21,8 +21,7 @@ export default function ReportsPage() {
     const fetchReport = async () => {
       setLoading(true);
       try {
-        const { getAuth } = await import("firebase/auth");
-        const auth = getAuth();
+        const { auth } = await import("@/lib/firebase");
         const token = await auth.currentUser?.getIdToken();
         const res = await fetch(`/api/reports?period=${period}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},

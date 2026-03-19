@@ -4,8 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Tag, CreateTagInput } from "@/types";
 
 async function apiFetch(url: string, options?: RequestInit) {
-  const { getAuth } = await import("firebase/auth");
-  const auth = getAuth();
+  const { auth } = await import("@/lib/firebase");
   const token = await auth.currentUser?.getIdToken();
   const res = await fetch(`/api${url}`, {
     ...options,

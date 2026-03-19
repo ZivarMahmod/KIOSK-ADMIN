@@ -102,23 +102,25 @@ export interface ApiResponse<T> {
 /** Builds Axios instance with baseURL (/api), credentials, and request/response interceptors. */
 function createAxiosInstance(): AxiosInstance {
   const instance = axios.create({
-    baseURL:
-      process.env.NODE_ENV === "production"
-        ? "https://stockly-inventory.vercel.app/api"
-        : "http://localhost:3000/api",
+    baseURL: "/api",
     headers: {
       "Content-Type": "application/json",
     },
-    withCredentials: true, // Ensure cookies are sent with requests
-    timeout: 30000, // 30 second timeout
+    withCredentials: true,
+    timeout: 30000,
   });
 
-  // Request interceptor - Add auth token
+  // Request interceptor - Add Firebase auth token
   instance.interceptors.request.use(
-    (config) => {
-      const token = getCookie("session_id");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+    async (config) => {
+      try {
+        const { auth } = await import("@/lib/firebase");
+        const token = await auth.currentUser?.getIdToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      } catch {
+        // Firebase not initialized yet, skip auth header
       }
       return config;
     },
