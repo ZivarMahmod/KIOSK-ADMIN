@@ -109,7 +109,7 @@ interface NavbarProps {
  * Also provides the layout structure with background and scrolling
  */
 export default function Navbar({ children }: NavbarProps) {
-  const { user, isCheckingAuth } = useAuth();
+  const { user, isCheckingAuth, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
@@ -140,15 +140,8 @@ export default function Navbar({ children }: NavbarProps) {
 
       // Await the server-side logout so the httpOnly session_id cookie is
       // cleared via Set-Cookie BEFORE the browser navigates to /login.
-      // (Cookies.remove can't clear httpOnly cookies; only a server
-      // response can.)  This is fast — no DB calls, just clears a cookie.
-      // We do NOT call logout() from auth context because that would
-      // setIsLoggedIn(false) → React re-renders the current page with
-      // empty data → "Failed to load" flash.
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      }).catch(() => {});
+      // Use Firebase signOut via auth context, then redirect
+      await logout();
       window.location.href = "/login";
       return;
     } catch (error) {
