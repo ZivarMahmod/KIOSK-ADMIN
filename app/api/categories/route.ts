@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, status, description, notes } = body;
+    const { name, status, description, notes, emoji, color, subtitle } = body;
 
     if (!name || typeof name !== "string" || name.trim() === "") {
       return NextResponse.json(
@@ -65,6 +65,9 @@ export async function POST(request: NextRequest) {
       status: status !== undefined ? Boolean(status) : true,
       description: description && typeof description === "string" ? description.trim() || null : null,
       notes: notes && typeof notes === "string" ? notes.trim() || null : null,
+      emoji: emoji && typeof emoji === "string" ? emoji.trim() : "",
+      color: color && typeof color === "string" ? color.trim() : "",
+      subtitle: subtitle && typeof subtitle === "string" ? subtitle.trim() : "",
       createdAt: now,
       updatedAt: null,
     });

@@ -110,7 +110,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, status, description, notes } = body;
+    const { name, status, description, notes, emoji, color, subtitle } = body;
 
     if (!name || typeof name !== "string" || name.trim() === "") {
       return NextResponse.json(
@@ -130,6 +130,9 @@ export async function PUT(
     if (notes !== undefined) {
       updateData.notes = notes && typeof notes === "string" ? notes.trim() || null : null;
     }
+    if (emoji !== undefined) updateData.emoji = typeof emoji === "string" ? emoji.trim() : "";
+    if (color !== undefined) updateData.color = typeof color === "string" ? color.trim() : "";
+    if (subtitle !== undefined) updateData.subtitle = typeof subtitle === "string" ? subtitle.trim() : "";
 
     await docRef.update(updateData);
 

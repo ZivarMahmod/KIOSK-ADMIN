@@ -13,13 +13,30 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Tag, Trash2, Filter } from "lucide-react";
 import type { Receipt } from "@/types";
 
+const STANDARD_TAGS = [
+  { name: "TEST", emoji: "🧪", color: "#9333ea" },
+  { name: "EGET BRUK", emoji: "🏠", color: "#2563eb" },
+  { name: "SKADA", emoji: "💔", color: "#dc2626" },
+  { name: "ÖVRIGT", emoji: "📌", color: "#6b7280" },
+];
+
 export default function ReceiptsPage() {
   const { data: receipts = [], isLoading } = useReceipts();
-  const { data: tags = [] } = useTags();
+  const { data: customTags = [] } = useTags();
   const updateMutation = useUpdateReceipt();
   const deleteMutation = useDeleteReceipt();
   const createTagMutation = useCreateTag();
   const deleteTagMutation = useDeleteTag();
+
+  // Merge standard tags with custom tags from Firebase (deduplicate by name)
+  const allTags = [
+    ...STANDARD_TAGS.map((t) => ({ ...t, id: `standard-${t.name}`, isStandard: true })),
+    ...customTags.map((t) => ({ ...t, isStandard: false })),
+  ].filter((t, i, arr) => {
+    // Keep standard tags, and only keep custom tags whose name doesn't collide with a standard tag
+    if (t.isStandard) return true;
+    return !STANDARD_TAGS.some((st) => st.name.toUpperCase() === t.name.toUpperCase());
+  });
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -157,7 +174,7 @@ export default function ReceiptsPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">Ingen tagg</SelectItem>
-                        {tags.map((tag) => (
+                        {allTags.map((tag) => (
                           <SelectItem key={tag.id} value={tag.name}>
                             {tag.emoji} {tag.name}
                           </SelectItem>
@@ -188,15 +205,21 @@ export default function ReceiptsPage() {
             <Button type="submit" size="sm" disabled={createTagMutation.isPending}>+</Button>
           </form>
           <div className="space-y-2 max-h-60 overflow-y-auto">
-            {tags.map((tag) => (
+            {allTags.map((tag) => (
               <div key={tag.id} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-white/5">
-                <span>{tag.emoji} {tag.name}</span>
-                <Button variant="ghost" size="sm" className="text-red-500" onClick={() => deleteTagMutation.mutate(tag.id)}>
-                  <Trash2 className="h-3 w-3" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: tag.color }} />
+                  <span>{tag.emoji} {tag.name}</span>
+                  {tag.isStandard && <span className="text-[10px] text-gray-400 bg-gray-100 dark:bg-white/10 px-1.5 py-0.5 rounded">Standard</span>}
+                </div>
+                {!tag.isStandard && (
+                  <Button variant="ghost" size="sm" className="text-red-500" onClick={() => deleteTagMutation.mutate(tag.id)}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
             ))}
-            {tags.length === 0 && <p className="text-sm text-gray-500 text-center py-4">Inga taggar skapade ännu</p>}
+            {allTags.length === STANDARD_TAGS.length && customTags.length === 0 && <p className="text-sm text-gray-500 text-center py-2">Inga egna taggar skapade ännu</p>}
           </div>
           <DialogFooter>
             <DialogClose asChild><Button variant="secondary">Stäng</Button></DialogClose>

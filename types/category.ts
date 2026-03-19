@@ -12,6 +12,9 @@ export interface Category {
   status: boolean; // Active/Inactive status (default: true)
   description?: string | null; // Optional description field
   notes?: string | null; // Optional notes field
+  emoji?: string; // Emoji icon for kiosk display
+  color?: string; // Color hex for kiosk display
+  subtitle?: string; // Subtitle shown on kiosk
   createdAt: Date;
   updatedAt?: Date | null;
   createdBy: string; // User ID who created the category
@@ -60,6 +63,9 @@ export interface CreateCategoryInput {
   status?: boolean; // Optional, defaults to true
   description?: string | null; // Optional description
   notes?: string | null; // Optional notes
+  emoji?: string;
+  color?: string;
+  subtitle?: string;
 }
 
 /**
@@ -71,5 +77,8 @@ export interface UpdateCategoryInput {
   status?: boolean; // Optional status update
   description?: string | null; // Optional description update
   notes?: string | null; // Optional notes update
+  emoji?: string;
+  color?: string;
+  subtitle?: string;
 }
 

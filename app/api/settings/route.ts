@@ -31,6 +31,18 @@ export async function GET(request: NextRequest) {
         bubbleVisible: true,
         selectButtonVisible: true,
         userId: session.uid,
+        storeName: "Zivert Holms hörna",
+        storeSubtitle: "",
+        screensaverEnabled: true,
+        screensaverText: "Välkommen!",
+        screensaverDelay: 120,
+        receiptPrefix: "ZH",
+        primaryColor: "#2d6b5a",
+        secondaryColor: "#d4a574",
+        accentColor: "#f5a623",
+        offersEnabled: true,
+        wishesEnabled: true,
+        kioskLocked: true,
       });
     }
 
@@ -60,11 +72,28 @@ export async function PATCH(request: NextRequest) {
       userId: session.uid,
     };
 
-    if (body.swishNumber !== undefined) updateData.swishNumber = body.swishNumber;
-    if (body.bubbleText1 !== undefined) updateData.bubbleText1 = body.bubbleText1;
-    if (body.bubbleText2 !== undefined) updateData.bubbleText2 = body.bubbleText2;
-    if (body.bubbleVisible !== undefined) updateData.bubbleVisible = body.bubbleVisible;
-    if (body.selectButtonVisible !== undefined) updateData.selectButtonVisible = body.selectButtonVisible;
+    // All supported settings fields
+    const stringFields = [
+      "swishNumber", "bubbleText1", "bubbleText2",
+      "storeName", "storeSubtitle",
+      "screensaverText", "receiptPrefix",
+      "primaryColor", "secondaryColor", "accentColor",
+    ];
+    const booleanFields = [
+      "bubbleVisible", "selectButtonVisible",
+      "screensaverEnabled", "offersEnabled", "wishesEnabled", "kioskLocked",
+    ];
+    const numberFields = ["screensaverDelay"];
+
+    for (const field of stringFields) {
+      if (body[field] !== undefined) updateData[field] = body[field];
+    }
+    for (const field of booleanFields) {
+      if (body[field] !== undefined) updateData[field] = body[field];
+    }
+    for (const field of numberFields) {
+      if (body[field] !== undefined) updateData[field] = body[field];
+    }
 
     await settingsCol.doc(session.uid).set(updateData, { merge: true });
 

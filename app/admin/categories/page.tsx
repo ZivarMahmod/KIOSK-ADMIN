@@ -23,6 +23,9 @@ export default function CategoriesPage() {
   const [editing, setEditing] = useState<Category | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [emoji, setEmoji] = useState("");
+  const [color, setColor] = useState("#000000");
+  const [subtitle, setSubtitle] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
   const filtered = categories.filter((c) =>
@@ -33,6 +36,9 @@ export default function CategoriesPage() {
     setEditing(null);
     setName("");
     setDescription("");
+    setEmoji("");
+    setColor("#000000");
+    setSubtitle("");
     setDialogOpen(true);
   };
 
@@ -40,6 +46,9 @@ export default function CategoriesPage() {
     setEditing(cat);
     setName(cat.name);
     setDescription(cat.description || "");
+    setEmoji(cat.emoji || "");
+    setColor(cat.color || "#000000");
+    setSubtitle(cat.subtitle || "");
     setDialogOpen(true);
   };
 
@@ -47,9 +56,23 @@ export default function CategoriesPage() {
     e.preventDefault();
     if (!name.trim()) return;
     if (editing) {
-      await updateMutation.mutateAsync({ id: editing.id, name: name.trim(), description });
+      await updateMutation.mutateAsync({
+        id: editing.id,
+        name: name.trim(),
+        description,
+        emoji: emoji.trim(),
+        color,
+        subtitle: subtitle.trim(),
+      });
     } else {
-      await createMutation.mutateAsync({ name: name.trim(), userId: user?.id || "", description });
+      await createMutation.mutateAsync({
+        name: name.trim(),
+        userId: user?.id || "",
+        description,
+        emoji: emoji.trim(),
+        color,
+        subtitle: subtitle.trim(),
+      });
     }
     setDialogOpen(false);
   };
@@ -88,22 +111,35 @@ export default function CategoriesPage() {
         <Table>
           <TableHeader>
             <TableRow className="bg-emerald-50/50 dark:bg-white/10">
+              <TableHead className="font-semibold">Emoji</TableHead>
               <TableHead className="font-semibold">Namn</TableHead>
+              <TableHead className="font-semibold">Undertitel</TableHead>
               <TableHead className="font-semibold">Beskrivning</TableHead>
+              <TableHead className="font-semibold">Färg</TableHead>
               <TableHead className="font-semibold">Status</TableHead>
               <TableHead className="font-semibold text-right">Åtgärder</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={4} className="text-center py-8 text-gray-500">Laddar...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-8 text-gray-500">Laddar...</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={4} className="text-center py-8 text-gray-500">Inga kategorier hittade. Skapa din första!</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-8 text-gray-500">Inga kategorier hittade. Skapa din första!</TableCell></TableRow>
             ) : (
               filtered.map((cat) => (
                 <TableRow key={cat.id} className="hover:bg-emerald-50/30 dark:hover:bg-white/5">
+                  <TableCell className="text-xl">{cat.emoji || "—"}</TableCell>
                   <TableCell className="font-medium text-gray-900 dark:text-white">{cat.name}</TableCell>
+                  <TableCell className="text-gray-600 dark:text-gray-400">{cat.subtitle || "—"}</TableCell>
                   <TableCell className="text-gray-600 dark:text-gray-400">{cat.description || "—"}</TableCell>
+                  <TableCell>
+                    {cat.color ? (
+                      <div className="flex items-center gap-2">
+                        <span className="inline-block w-4 h-4 rounded-full border border-gray-300" style={{ backgroundColor: cat.color }} />
+                        <span className="text-xs text-gray-500">{cat.color}</span>
+                      </div>
+                    ) : "—"}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={cat.status !== false ? "default" : "secondary"} className={cat.status !== false ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : ""}>
                       {cat.status !== false ? "Aktiv" : "Inaktiv"}
@@ -133,8 +169,25 @@ export default function CategoriesPage() {
               <Input id="cat-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="T.ex. Dryck, Snacks..." required />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="cat-subtitle">Undertitel</Label>
+              <Input id="cat-subtitle" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="Kort undertitel för kiosken..." />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="cat-desc">Beskrivning</Label>
               <Input id="cat-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Valfri beskrivning..." />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cat-emoji">Emoji</Label>
+                <Input id="cat-emoji" value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="T.ex. 🍕 🥤 🍬" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cat-color">Färg</Label>
+                <div className="flex gap-2">
+                  <Input type="color" id="cat-color" value={color} onChange={(e) => setColor(e.target.value)} className="w-12 h-10 p-1" />
+                  <Input value={color} onChange={(e) => setColor(e.target.value)} className="flex-1" placeholder="#000000" />
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="secondary">Avbryt</Button></DialogClose>
